@@ -23,3 +23,12 @@ Web dashboard values update at rate of 1Hz during operation.
 
 ### 6. Control 'feel'
 Controls feel responsive, and vehicle moves at speeds proportional to pedal input level. Controls are accurate and precise. 
+
+
+## Equipment
+1. 1x Saitek flight rudder pedals
+2. 1x Motor driver (TBC)
+3. 1x Rover kit
+4. ST Micro B-L475E-IOT1A Discovery Kit
+5. 2x Nordic Semiconductor NRF52840 USB dongles
+6. 4x Laser ToF sensors (TBC)
