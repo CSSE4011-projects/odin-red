@@ -1,0 +1,9 @@
+
+&i2c1 {
+	vl53l1x@29 {
+		compatible = "st,vl53l1x";
+		reg = <0x29>;
+		xshut-gpios = <&gpiob 2 GPIO_ACTIVE_HIGH>;
+        int-gpios = <&gpiob 0 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>;
+	};
+};
