@@ -27,8 +27,14 @@ void main(void) {
 	const struct device *i2c_dev = DEVICE_DT_GET(DT_NODELABEL(i2c1));
 	uint8_t addr = 0x5D; 
 	motordriver_init(i2c_dev, addr); 
+	while (1)
+	{
+		motordriver_send_pwm(i2c_dev, addr, 100, 1);
 
-	motordriver_send_pwm(i2c_dev, addr, 100, 1);
+		k_sleep(K_MSEC(1234));
+		motordriver_send_pwm(i2c_dev, addr, 10, 1);
+		k_sleep(K_MSEC(4321));
+	}
 	
 	
 }
