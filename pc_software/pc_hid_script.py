@@ -1,4 +1,5 @@
 import hid
+import asyncio
 import subprocess
 
 # Web Server Imports
@@ -93,11 +94,11 @@ def create_HID_device() -> hid:
     return hid.Device(vid=pedal_vid, pid=pedal_pid, path=pedal_path)
 
 # Display HID Debug Data
-def display_debug_data(rot, l_acc, r_acc, abs_acc):
+def display_debug_data(rot : int, l_acc : int, r_acc : int, abs_acc : int):
     print("Rudder Angle: {0}, Break: {1}, Accel: {2}, Abs Accel: {3}\r\n".format(rot, l_acc, r_acc, abs_acc))
 
 # Display positional data
-def display_pos_data(x, y):
+def display_pos_data(x : int, y : int):
     print("X pos = {0}\nY pos = {1}\n".format(x, y))
 
 # Read data from the device
@@ -150,3 +151,31 @@ while 1:
     write_api.write(bucket=ml_bucket, org=org, record=ml_data_point)
 
     display_pos_data(positional_data["pos_data"]["x_position"], positional_data["pos_data"]["y_position"])
+
+
+# IMPLEMENT TOMORROW
+async def read_from_hid():
+    # Connect to the HID device
+    device = hid.Device(0x1234, 0x5678) # Replace with the actual VID and PID of your HID device
+    while True:
+        # Read data from the HID device
+        data = device.read(64)
+        # Process the data
+        print("Read data from HID:", data)
+        # Wait for a short duration
+        await asyncio.sleep(0.01)
+
+async def read_from_serial():
+    # Connect to the serial port
+    ser = serial.Serial('/dev/ttyUSB0', 9600) # Replace with the actual port name and baud rate
+    while True:
+        # Read data from the serial port
+        data = ser.read(100)
+        # Process the data
+        print("Read data from serial port:", data)
+        # Wait for a short duration
+        await asyncio.sleep(0.01)
+
+# Create an event loop and run both tasks concurrently
+loop = asyncio.get_event_loop()
+loop.run_until_complete(asyncio.gather(read_from_hid(), read_from_serial()))
