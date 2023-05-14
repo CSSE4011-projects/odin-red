@@ -7,6 +7,7 @@ find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE})
 FILE(GLOB app_sources src/*.c)
 target_sources(app PRIVATE ${app_sources}
                             ./src/motordriver.c
+                            ./src/rovermotor.c
                             )
                             
 

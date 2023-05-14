@@ -4,7 +4,6 @@
 #include <zephyr/device.h>
 #include <zephyr/drivers/i2c.h>
 
-#define SCMD_CONFIG_H
 
 //defaults ( Set config in PSoC, use for reference in Arduino )   
 #define ID_WORD                    0xA9  //Device ID to be programmed into memory for reads
@@ -137,7 +136,7 @@
 
 extern void motordriver_init(const struct device* dev, uint8_t device_addr);
 
-extern int motordriver_send_pwm(const struct device* dev, uint8_t device_addr, uint8_t val, uint8_t is_left); 
+extern int motordriver_send_pwm(const struct device* dev, uint8_t device_addr, uint8_t val); 
 
 
 
