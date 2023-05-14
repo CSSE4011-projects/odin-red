@@ -4,6 +4,24 @@
 #include <zephyr/device.h>
 #include <zephyr/drivers/i2c.h>
 
+// Sourced from Sparkfun SCMD driver, original header below: 
+/******************************************************************************
+SCMD_config.h
+Serial Controlled Motor Driver
+Marshall Taylor @ SparkFun Electronics
+Nov 3, 2016
+https://github.com/sparkfun/Serial_Controlled_Motor_Driver
+https://github.com/sparkfun/SparkFun_Serial_Controlled_Motor_Driver_Arduino_Library
+
+This file contains common names for memory locations and hardware defaults.
+This is used by the PSoC firmware and with the user Arduino library for use in
+conjunction with readRegister() and writeRegister().
+
+This code is released under the [MIT License](http://opensource.org/licenses/MIT).
+Please review the LICENSE.md file included with this example. If you have any questions 
+or concerns with licensing, please contact techsupport@sparkfun.com.
+Distributed as-is; no warranty is given.
+******************************************************************************/
 
 //defaults ( Set config in PSoC, use for reference in Arduino )   
 #define ID_WORD                    0xA9  //Device ID to be programmed into memory for reads
@@ -116,7 +134,6 @@
 #define SCMD_BRIDGE_SLV_L          0x54
 #define SCMD_BRIDGE_SLV_H          0x55
 
-//#define SCMD_PAGE_SELECT           0x6F
 #define SCMD_DRIVER_ENABLE         0x70
 #define SCMD_UPDATE_RATE           0x71
 #define SCMD_FORCE_UPDATE          0x72
@@ -134,10 +151,10 @@
 #define SCMD_REM_WRITE             0x7D
 #define SCMD_REM_READ              0x7E
 
+#define CONN_MAX_NUM_TRIES 5
+
 extern void motordriver_init(const struct device* dev, uint8_t device_addr);
 
 extern int motordriver_send_pwm(const struct device* dev, uint8_t device_addr, uint8_t val); 
-
-
 
 #endif 

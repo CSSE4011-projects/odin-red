@@ -11,7 +11,8 @@
 #include <zephyr/device.h>
 #include "motordriver.h"
 
-struct rovermotor_info {
+struct rovermotor_info 
+{
     uint8_t left_addr;
     uint8_t right_addr;
     struct k_msgq handler_queue;
@@ -20,7 +21,8 @@ struct rovermotor_info {
     struct k_thread motor_thread_data; 
 };
 
-struct rover_queue_msg {
+struct rover_queue_msg 
+{
     float direction;
     int8_t velocity; 
 };
