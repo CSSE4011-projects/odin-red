@@ -1,0 +1,32 @@
+
+&i2c1 {
+
+	vl53l1x_front: vl53l1x@29 {
+		compatible = "st,vl53l1x";
+		reg = <0x29>;
+		xshut-gpios = <&gpioa 4 GPIO_ACTIVE_HIGH>;
+        int-gpios = <&gpioa 6 (GPIO_ACTIVE_HIGH | GPIO_PULL_UP)>;
+	};
+
+	vl53l1x_back: vl53l1x@2a {
+		compatible = "st,vl53l1x";
+		reg = <0x2a>;
+		xshut-gpios = <&gpiob 1 GPIO_ACTIVE_HIGH>;
+        int-gpios = <&gpioa 7 (GPIO_ACTIVE_HIGH | GPIO_PULL_UP)>;
+	};
+
+	vl53l1x_left: vl53l1x@2b {
+		compatible = "st,vl53l1x";
+		reg = <0x2b>;
+		xshut-gpios = <&gpiob 4 GPIO_ACTIVE_HIGH>;
+        int-gpios = <&gpioa 15 (GPIO_ACTIVE_HIGH | GPIO_PULL_UP)>;
+	};
+
+	vl53l1x_right: vl53l1x@2c {
+		compatible = "st,vl53l1x";
+		reg = <0x2c>;
+		xshut-gpios = <&gpioa 3 GPIO_ACTIVE_HIGH>;
+        int-gpios = <&gpiob 2 (GPIO_ACTIVE_HIGH | GPIO_PULL_UP)>;
+	};
+
+};
