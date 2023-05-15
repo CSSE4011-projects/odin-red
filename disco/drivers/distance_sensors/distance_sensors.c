@@ -94,7 +94,7 @@ void distance_sensors_thread(void *, void *, void *)
         /* Send distances data to message queue */
         if (k_msgq_put(&distances_msgq, &distances, K_NO_WAIT) != 0) {
             /* Queue is full, purge it */
-            k_msgq_purge(&angle_distances_msgqmsgq);
+            k_msgq_purge(&distances_msgq);
         }
 
         // TODO: change this to timestamping to keep refresh rate constant
