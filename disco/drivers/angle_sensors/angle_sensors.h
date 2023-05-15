@@ -28,4 +28,7 @@ struct angle_data {
 /* Message queue for angle sensor data */
 extern struct k_msgq angle_msgq;
 
+/* Semaphore for signalling reference angle updates */
+extern struct k_sem update_ref_angle_sem;
+
 #endif

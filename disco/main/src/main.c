@@ -8,6 +8,7 @@
 #include <math.h>
 #include "distance_sensors/distance_sensors.h"
 #include "angle_sensors/angle_sensors.h"
+#include "serial_comms/serial_comms.h"
 
 /* Macro definitions for constants */
 #define Y_MAX_CM            200
@@ -27,6 +28,10 @@ struct k_thread angle_thread_data;
 /* Thread to handle measuring distance using VL53L1X TOF sensors */
 K_THREAD_STACK_DEFINE(distance_thread_stack, DISTANCE_THREAD_STACK_SIZE);
 struct k_thread distance_thread_data;
+
+/* Thread to handle serial communications over uart */
+K_THREAD_STACK_DEFINE(serial_comms_thread_stack, SERIAL_COMMS_STACK_SIZE);
+struct k_thread serial_comms_thread_data;
 
 /* Function definitions */
 void find_solution_lines(double distance, double angle, uint8_t* pos_buffer);
@@ -52,6 +57,15 @@ void main(void)
 													DISTANCE_THREAD_PRIORITY,
 													0, K_NO_WAIT);
 
+    /* Create a thread to handle serial communications */
+	k_tid_t serial_comms_thread_id = k_thread_create(&serial_comms_thread_data,
+													serial_comms_thread_stack,
+													SERIAL_COMMS_STACK_SIZE,
+													serial_comms_thread,
+													NULL, NULL, NULL,
+													SERIAL_COMMS_PRIORITY,
+													0, K_NO_WAIT);
+
     /* Start angle sensors thread */
 	if (angle_thread_id != NULL) {
 		k_thread_start(angle_thread_id);
@@ -62,18 +76,31 @@ void main(void)
 		k_thread_start(distance_thread_id);
 	}
 
+	/* Start serial comms thread */
+	if (serial_comms_thread_id != NULL) {
+		k_thread_start(serial_comms_thread_id);
+	}
+
+
 	/* Struct to store angle data received from angle sensors thread */
 	struct angle_data angle;
 
 	/* Struct to store distances data received from distance sensors thread */
 	struct distance_data distances;
 
+    /* Struct to store predicted location to send to serial comms thread */
+    struct serial_comms_data outgoing_location;
+
     /* Buffer to store the predicted x,y location of the rover */
     uint8_t pred_location[2];
 
     while (1) {
 
-        // TODO: check for update reference angle from UART thread here
+        /* Check if update reference angle semaphore has been given from UART thread */
+        if (!k_sem_take(&serial_ref_angle_sem, K_NO_WAIT)) {
+            /* Give update reference angle semaphore to angle thread */
+            k_sem_give(&update_ref_angle_sem);
+        }
 
 		/* Check for angle data */
 		k_msgq_get(&angle_msgq, &angle, K_NO_WAIT);
@@ -88,7 +115,11 @@ void main(void)
                 distances.right_distance / 10,
                 pred_location);
 
-        // TODO: send pred location to uart thread
+        /* Send position to serial comms message queue */
+        if (k_msgq_put(&serial_comms_msgq, &outgoing_location, K_NO_WAIT) != 0) {
+            /* Queue is full, purge it */
+            k_msgq_purge(&serial_comms_msgq);
+        }
         
         // TODO: change this to timestamping
 		k_sleep(K_MSEC(200));        

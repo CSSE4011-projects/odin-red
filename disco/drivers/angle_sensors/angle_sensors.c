@@ -24,7 +24,8 @@ K_MSGQ_DEFINE(
     ANGLE_MSGQ_ALIGN
 );
 
-// TODO: add functionality to set 'reference' angle using a semaphore.
+/* Semaphore to signal refernce angle updates */
+K_SEM_DEFINE(update_ref_angle_sem, 0, 1);
 
 /* Macro definitions for angle sensors message queue */
 void angle_sensors_thread(void *, void *, void *)
@@ -78,7 +79,15 @@ void angle_sensors_thread(void *, void *, void *)
         prev_angle += 360;
     }
 
+    /* Initialise reference angle to 0 degrees */
+    double reference_angle = 0;
+
     while (1) {
+        /* Check if update reference angle semaphore has been given */
+        if (!k_sem_take(&update_ref_angle_sem, K_NO_WAIT)) {
+            reference_angle = prev_angle;
+        }
+
 		/* Fetch LSM6DSL Gyroscope values */
 		sensor_sample_fetch_chan(lsm6dsl_dev, SENSOR_CHAN_GYRO_XYZ);
         sensor_channel_get(lsm6dsl_dev, SENSOR_CHAN_GYRO_Z, &gyro_z_raw);
@@ -112,7 +121,11 @@ void angle_sensors_thread(void *, void *, void *)
 		}
 
         /* Send calculated angle using msgq */
-        angle_info.angle = prev_angle;
+        angle_info.angle = prev_angle - reference_angle;
+        if (angle_info.angle < 0) {
+            angle_info.angle += 360;
+        }
+
         /* Send angle data to message queue */
         if (k_msgq_put(&angle_msgq, &angle_info, K_NO_WAIT) != 0) {
             /* Queue is full, purge it */
