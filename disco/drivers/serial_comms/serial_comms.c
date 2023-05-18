@@ -26,7 +26,7 @@ char rx_buf[MSG_SIZE];
 int rx_buf_pos;
 
 /* Callback used for UART receive interupt. Ignores serial input
-    until the preamble 0xAA is detected, and then reads up until
+    until the byte 0x69 is detected, and then reads up until
     the specified length of the message. */
 void serial_cb(const struct device *dev, void *user_data)
 {
@@ -44,7 +44,7 @@ void serial_cb(const struct device *dev, void *user_data)
 	while (uart_fifo_read(uart_dev, &c, 1) == 1) {
 
 		// TODO: handle updating angle here (probably semaphore)
-		if (c == PREAMBLE) {
+		if (c == UPDATE_ANGLE_BYTE) {
             /* Give semaphore to signal update of reference angle */
             k_sem_give(&serial_ref_angle_sem);
         }

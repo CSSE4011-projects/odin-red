@@ -17,7 +17,8 @@
 
 /* Macro definitions for UART buffer */
 #define MSG_SIZE 32
-#define PREAMBLE 0xAA
+#define PREAMBLE 0xFF
+#define UPDATE_ANGLE_BYTE 0x69
 
 /* Entry point to SCU hci thread */
 extern void serial_comms_thread(void *, void *, void *);
