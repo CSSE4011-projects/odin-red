@@ -2,7 +2,7 @@
 #include "angle_sensors.h"
 
 /* Macros for Kalman filter weights */
-#define GYRO_WEIGHT     0.2
+#define GYRO_WEIGHT     1
 #define MAGN_WEIGHT     (1 - GYRO_WEIGHT)
 
 /* Calibration constants */
@@ -10,6 +10,10 @@
 #define MAGN_X_MIN      -0.33
 #define MAGN_Y_MAX      0.22
 #define MAGN_Y_MIN      -0.14
+// #define MAGN_X_MAX      5.24
+// #define MAGN_X_MIN      3.16
+// #define MAGN_Y_MAX      2.25
+// #define MAGN_Y_MIN      -0.04
 #define GYRO_Z_OFFSET   0.8
 #define MAGN_X_SCALER   ((MAGN_X_MAX - MAGN_X_MIN) / 2)
 #define MAGN_X_OFFSET   (MAGN_X_SCALER - MAGN_X_MAX)
@@ -103,7 +107,6 @@ void angle_sensors_thread(void *, void *, void *)
         magn_y = (sensor_value_to_double(&magn_y_raw) + MAGN_Y_OFFSET) / MAGN_Y_SCALER;
 
         /* Convert magnetometer readings to an angle */
-        // TODO: reference angle
         angle = atan2(magn_y, magn_x) * 57.3;
         if (angle < 0) {
             angle += 360;
@@ -113,7 +116,7 @@ void angle_sensors_thread(void *, void *, void *)
         /* Use sensor fusion to update the angle based on a linear
             combination between the new angle and the old angle
             combined with the angular velocity */
-	    prev_angle = GYRO_WEIGHT * (prev_angle + gyro_z) + MAGN_WEIGHT * angle;
+	    prev_angle = GYRO_WEIGHT * (prev_angle + (gyro_z/5)) + MAGN_WEIGHT * angle;
 		if (prev_angle < 0) {
 			prev_angle += 360;
 		} else if (prev_angle >= 360) {

@@ -30,9 +30,9 @@
 K_THREAD_STACK_DEFINE(angle_thread_stack, ANGLE_THREAD_STACK_SIZE);
 struct k_thread angle_thread_data;
 
-// /* Thread to handle measuring distance using VL53L1X TOF sensors */
-// K_THREAD_STACK_DEFINE(distance_thread_stack, DISTANCE_THREAD_STACK_SIZE);
-// struct k_thread distance_thread_data;
+/* Thread to handle measuring distance using VL53L1X TOF sensors */
+K_THREAD_STACK_DEFINE(distance_thread_stack, DISTANCE_THREAD_STACK_SIZE);
+struct k_thread distance_thread_data;
 
 /* Thread to handle serial communications over uart */
 K_THREAD_STACK_DEFINE(serial_comms_thread_stack, SERIAL_COMMS_STACK_SIZE);
@@ -53,14 +53,14 @@ void main(void)
 													ANGLE_THREAD_PRIORITY,
 													0, K_NO_WAIT);
 
-    // /* Create a thread to handle distance sensors */
-	// k_tid_t distance_thread_id = k_thread_create(&distance_thread_data,
-	// 												distance_thread_stack,
-	// 												DISTANCE_THREAD_STACK_SIZE,
-	// 												distance_sensors_thread,
-	// 												NULL, NULL, NULL,
-	// 												DISTANCE_THREAD_PRIORITY,
-	// 												0, K_NO_WAIT);
+    /* Create a thread to handle distance sensors */
+	k_tid_t distance_thread_id = k_thread_create(&distance_thread_data,
+													distance_thread_stack,
+													DISTANCE_THREAD_STACK_SIZE,
+													distance_sensors_thread,
+													NULL, NULL, NULL,
+													DISTANCE_THREAD_PRIORITY,
+													0, K_NO_WAIT);
 
     /* Create a thread to handle serial communications */
 	k_tid_t serial_comms_thread_id = k_thread_create(&serial_comms_thread_data,
@@ -76,10 +76,10 @@ void main(void)
 		k_thread_start(angle_thread_id);
 	}
 
-	// /* Start distance sensors thread */
-	// if (distance_thread_id != NULL) {
-	// 	k_thread_start(distance_thread_id);
-	// }
+	/* Start distance sensors thread */
+	if (distance_thread_id != NULL) {
+		k_thread_start(distance_thread_id);
+	}
 
 	/* Start serial comms thread */
 	if (serial_comms_thread_id != NULL) {

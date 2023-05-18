@@ -74,16 +74,17 @@ void distance_sensors_thread(void *, void *, void *)
 
     while (1) {
 
-        /* Trigger sensors to read new values */
+        /* Trigger sensors to read new values and get new measurements */
         sensor_sample_fetch(vl53l1x_front_dev);
-        sensor_sample_fetch(vl53l1x_back_dev);
-        sensor_sample_fetch(vl53l1x_left_dev);
-        sensor_sample_fetch(vl53l1x_right_dev);
-
-        /* Get new measurements */
 		sensor_channel_get(vl53l1x_front_dev, SENSOR_CHAN_DISTANCE, &front_value);
+
+        sensor_sample_fetch(vl53l1x_back_dev);
 		sensor_channel_get(vl53l1x_back_dev, SENSOR_CHAN_DISTANCE, &back_value);
+
+        sensor_sample_fetch(vl53l1x_left_dev);
 		sensor_channel_get(vl53l1x_left_dev, SENSOR_CHAN_DISTANCE, &left_value);
+
+        sensor_sample_fetch(vl53l1x_right_dev);
 		sensor_channel_get(vl53l1x_right_dev, SENSOR_CHAN_DISTANCE, &right_value);
 
         distances.front_distance = sensor_value_to_double(&front_value);
@@ -91,6 +92,7 @@ void distance_sensors_thread(void *, void *, void *)
         distances.left_distance = sensor_value_to_double(&left_value);
         distances.right_distance = sensor_value_to_double(&right_value);
 
+		// TODO: change this to only send once
         /* Send distances data to message queue */
         if (k_msgq_put(&distances_msgq, &distances, K_NO_WAIT) != 0) {
             /* Queue is full, purge it */
@@ -98,6 +100,6 @@ void distance_sensors_thread(void *, void *, void *)
         }
 
         // TODO: change this to timestamping to keep refresh rate constant
-		k_sleep(K_MSEC(500));
+		k_sleep(K_MSEC(10));
     }
 }
