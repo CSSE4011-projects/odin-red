@@ -28,6 +28,12 @@ static int rover_cmd_cb(const struct shell* shell, size_t argc, char** argv)
 	return 0;
 }
 
+static int reset_angle_cmd_cb(const struct shell* shell, size_t argc, char** argv) 
+{
+	roveruart_reset_angle(&uart_control_handle);
+	LOG_INF("Resetting angle");
+	return 0;
+}
 void main(void) 
 {
 
@@ -44,16 +50,22 @@ void main(void)
         3,
         0
     );
-	struct rover_position_info_t position; 
+	SHELL_CMD_ARG_REGISTER(
+        reset_angle,
+        NULL,
+        "Reset angle refernce\n",
+		reset_angle_cmd_cb,
+        0,
+        0
+    );
+	rover_position_info_t position; 
 	while (1)
 	{
 		// Do nothing - shell command handles it all. 
 		k_sleep(K_MSEC(1000));
 		int res = roveruart_get_new_position(&uart_control_handle, &position);
-		roveruart_reset_angle(&uart_control_handle);
-		//uart_poll_out(uart_dev, 0x69);
 		if (res) {
-			LOG_INF("No new messages");
+			//LOG_INF("No new messages");
 		} else {
 			LOG_INF("Got position: (%hhu, %hhu)", position.x, position.y); 
 		}
