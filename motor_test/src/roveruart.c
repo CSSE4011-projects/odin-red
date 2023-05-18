@@ -3,7 +3,10 @@
 LOG_MODULE_REGISTER(roveruart);
 int roveruart_init(const struct device* dev, struct roveruart_info* info) 
 {
-
+	if (!device_is_ready(dev)) {
+		LOG_ERR("UART: Device is not ready.\n");
+		return -1;
+	}
     int ret = uart_irq_callback_user_data_set(dev, roveruart_rx_cb, (void*) info);
 	uart_irq_rx_enable(dev);
 	info->dev = dev;
@@ -14,7 +17,7 @@ int roveruart_init(const struct device* dev, struct roveruart_info* info)
 
 
 void roveruart_rx_cb(const struct device* dev, void* user_data) 
-{
+{	
 	struct roveruart_info* info = ((struct roveruart_info*) user_data);
 	uint8_t rxd;
 	static int num_rxd = 0; 
@@ -33,7 +36,7 @@ void roveruart_rx_cb(const struct device* dev, void* user_data)
 		} else if (num_rxd == 1) {
 			pos.x = rxd;
 			num_rxd++; 
-		} else {
+		} else if (num_rxd > 1){
 			pos.y = rxd; 
 			num_rxd = 0;
 			k_msgq_put(&info->receive, &pos, K_NO_WAIT);
@@ -46,6 +49,7 @@ void roveruart_rx_cb(const struct device* dev, void* user_data)
 // Realistically this should run more than quick enough to not need threading. 
 void roveruart_reset_angle(struct roveruart_info* info) 
 {
+	LOG_ERR("Resetting angle");
 	uart_poll_out(info->dev, 0x69);
 }
 

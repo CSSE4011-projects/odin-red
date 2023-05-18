@@ -41,6 +41,7 @@ void motordriver_init(const struct device* dev, uint8_t device_addr)
 
 int motordriver_send_pwm(const struct device* dev, uint8_t device_addr, uint8_t val)
 {
+    LOG_INF("Motors: %hhu", val);
     int res = i2c_reg_write_byte(dev, device_addr, SCMD_MA_DRIVE, val);
     if (res) {
         return res;

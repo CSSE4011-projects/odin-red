@@ -6,11 +6,10 @@
 };
 
 &pinctrl {
-
 	uart1_default: uart1_default {
 		group1 {
-			pinmux = <UART1_TX_GPIO5>;
-			output-high;
+			pinmux = <UART1_TX_GPIO7>;
+			bias-pull-up; 
 		};
 		group2 {
 			pinmux = <UART1_RX_GPIO6>;
