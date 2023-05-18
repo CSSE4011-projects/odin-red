@@ -21,13 +21,18 @@
 #define X_IDX               0
 #define Y_IDX               1
 
+#define FRONT_OFFSET_MM     0
+#define BACK_OFFSET_MM      0
+#define LEFT_OFFSET_MM      0
+#define RIGHT_OFFSET_MM     0
+
 /* Thread to handle calculating angle using magnetometer and gyroscope sensors */
 K_THREAD_STACK_DEFINE(angle_thread_stack, ANGLE_THREAD_STACK_SIZE);
 struct k_thread angle_thread_data;
 
-/* Thread to handle measuring distance using VL53L1X TOF sensors */
-K_THREAD_STACK_DEFINE(distance_thread_stack, DISTANCE_THREAD_STACK_SIZE);
-struct k_thread distance_thread_data;
+// /* Thread to handle measuring distance using VL53L1X TOF sensors */
+// K_THREAD_STACK_DEFINE(distance_thread_stack, DISTANCE_THREAD_STACK_SIZE);
+// struct k_thread distance_thread_data;
 
 /* Thread to handle serial communications over uart */
 K_THREAD_STACK_DEFINE(serial_comms_thread_stack, SERIAL_COMMS_STACK_SIZE);
@@ -48,14 +53,14 @@ void main(void)
 													ANGLE_THREAD_PRIORITY,
 													0, K_NO_WAIT);
 
-    /* Create a thread to handle distance sensors */
-	k_tid_t distance_thread_id = k_thread_create(&distance_thread_data,
-													distance_thread_stack,
-													DISTANCE_THREAD_STACK_SIZE,
-													distance_sensors_thread,
-													NULL, NULL, NULL,
-													DISTANCE_THREAD_PRIORITY,
-													0, K_NO_WAIT);
+    // /* Create a thread to handle distance sensors */
+	// k_tid_t distance_thread_id = k_thread_create(&distance_thread_data,
+	// 												distance_thread_stack,
+	// 												DISTANCE_THREAD_STACK_SIZE,
+	// 												distance_sensors_thread,
+	// 												NULL, NULL, NULL,
+	// 												DISTANCE_THREAD_PRIORITY,
+	// 												0, K_NO_WAIT);
 
     /* Create a thread to handle serial communications */
 	k_tid_t serial_comms_thread_id = k_thread_create(&serial_comms_thread_data,
@@ -71,10 +76,10 @@ void main(void)
 		k_thread_start(angle_thread_id);
 	}
 
-	/* Start distance sensors thread */
-	if (distance_thread_id != NULL) {
-		k_thread_start(distance_thread_id);
-	}
+	// /* Start distance sensors thread */
+	// if (distance_thread_id != NULL) {
+	// 	k_thread_start(distance_thread_id);
+	// }
 
 	/* Start serial comms thread */
 	if (serial_comms_thread_id != NULL) {
@@ -90,6 +95,9 @@ void main(void)
 
     /* Struct to store predicted location to send to serial comms thread */
     struct serial_comms_data outgoing_location;
+
+    outgoing_location.x_position = 0;
+    outgoing_location.y_position = 0;
 
     /* Buffer to store the predicted x,y location of the rover */
     uint8_t pred_location[2];
@@ -109,11 +117,14 @@ void main(void)
 		k_msgq_get(&distances_msgq, &distances, K_NO_WAIT);
 
         predict_location(angle.angle,
-                distances.front_distance / 10,
-                distances.back_distance / 10,
-                distances.left_distance / 10,
-                distances.right_distance / 10,
+                (distances.front_distance + FRONT_OFFSET_MM) / 10,
+                (distances.back_distance + BACK_OFFSET_MM) / 10,
+                (distances.left_distance + LEFT_OFFSET_MM) / 10,
+                (distances.right_distance + RIGHT_OFFSET_MM) / 10,
                 pred_location);
+
+        outgoing_location.x_position = pred_location[X_IDX];
+        outgoing_location.y_position = pred_location[Y_IDX];
 
         /* Send position to serial comms message queue */
         if (k_msgq_put(&serial_comms_msgq, &outgoing_location, K_NO_WAIT) != 0) {
@@ -236,6 +247,7 @@ void predict_location(double angle, double front_d, double back_d, double left_d
                     && abs(y_avg) >= DISTANCE_ERR_THRES) {
                 pos_buffer[X_IDX] = (uint8_t) x_avg;
                 pos_buffer[Y_IDX] = (uint8_t) y_avg;
+                return;
             }
 
         }
@@ -286,8 +298,8 @@ void find_solution_lines(double distance, double angle, uint8_t* pos_buffer)
     }
 
     if (90 < angle_deg && angle_deg < 270) {
-        pos_buffer[X_IDX] = (uint8_t) round(X_MAX_CM - xd);
-    } else {
         pos_buffer[X_IDX] = (uint8_t) round(X_MIN_CM - xd);
+    } else {
+        pos_buffer[X_IDX] = (uint8_t) round(X_MAX_CM - xd);
     }
 }
