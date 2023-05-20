@@ -95,7 +95,7 @@ int connect_attempt;
 static char rx_buf[MSG_SIZE];
 static int rx_buf_pos;
 
-float pos_data[] = {0};
+uint8_t pos_data[] = {0, 0};
 
 int16_t rx_remp[20];
 uint8_t ultra_data[] = {0, 0, 0, 0};

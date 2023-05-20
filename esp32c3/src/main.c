@@ -9,6 +9,7 @@
 #include <zephyr/drivers/uart.h>
 #include "rovermotor.h"
 #include "roveruart.h"
+#include "pos_mobile_bt.h"
 #define LOG_LEVEL 4
 LOG_MODULE_REGISTER(main);
 
@@ -28,18 +29,26 @@ static int rover_cmd_cb(const struct shell* shell, size_t argc, char** argv)
 	return 0;
 }
 
+
 static int reset_angle_cmd_cb(const struct shell* shell, size_t argc, char** argv) 
 {
 	roveruart_reset_angle(&uart_control_handle);
 	LOG_INF("Resetting angle");
 	return 0;
 }
-void main(void) 
-{
+#define STACKSIZE 1024
+#define PRIORITY 7
+#define MSG_SIZE 32
+K_THREAD_DEFINE(ble_id, STACKSIZE * 4, ble_connect_main, NULL, NULL, NULL,
+		PRIORITY, 0, 0);
 
-	rovermotor_init(0x5D, 0xAB, i2c_dev, &motor_control_handle); 
+int main(void) 
+{
+    int err = bt_enable(NULL);
+
+	// rovermotor_init(0x5D, 0xAB, i2c_dev, &motor_control_handle); 
 	roveruart_init(uart_dev, &uart_control_handle); 
-	LOG_INF("Initialized motor handler");
+	// LOG_INF("Initialized motor handler");
 
 	SHELL_CMD_ARG_REGISTER(
         rover,
@@ -58,7 +67,9 @@ void main(void)
         0,
         0
     );
-	rover_position_info_t position; 
+	rover_position_info_t position;
+	
+ 
 	while (1)
 	{
 		// Do nothing - shell command handles it all. 
