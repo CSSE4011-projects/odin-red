@@ -11,6 +11,7 @@ target_sources(app PRIVATE ${app_sources}
                             ./src/motordriver.c
                             ./src/rovermotor.c
                             ./src/roveruart.c
+                            ./src/pos_mobile_bt.c
                             )
                             
 
