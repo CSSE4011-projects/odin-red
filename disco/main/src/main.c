@@ -21,10 +21,10 @@
 #define X_IDX               0
 #define Y_IDX               1
 
-#define FRONT_OFFSET_MM     0
-#define BACK_OFFSET_MM      0
-#define LEFT_OFFSET_MM      0
-#define RIGHT_OFFSET_MM     0
+#define FRONT_OFFSET_MM     90
+#define BACK_OFFSET_MM      90
+#define LEFT_OFFSET_MM      50
+#define RIGHT_OFFSET_MM     50
 
 /* Thread to handle calculating angle using magnetometer and gyroscope sensors */
 K_THREAD_STACK_DEFINE(angle_thread_stack, ANGLE_THREAD_STACK_SIZE);
@@ -123,16 +123,25 @@ void main(void)
                     (distances.right_distance + RIGHT_OFFSET_MM) / 10,
                     pred_location);
 
+            /* Ensure position is in bounds */
+            for (uint8_t i = 0; i < 2; i++) {
+                if (pred_location[i] > 200) {
+                    pred_location[i] = 200;
+                } else if (pred_location[i] < 0) {
+                    pred_location[i] = 0;
+                }
+            }
 
             outgoing_location.x_position = pred_location[X_IDX];
             outgoing_location.y_position = pred_location[Y_IDX];
 
             /* Send position to serial comms message queue */
-            // TODO: maybe change to only send position if not 0
-            if (k_msgq_put(&serial_comms_msgq, &outgoing_location, K_NO_WAIT) != 0) {
-                /* Queue is full, purge it */
-                k_msgq_purge(&serial_comms_msgq);
-            }        
+            if (pred_location[X_IDX] || pred_location[Y_IDX]) { // don't send if both pos are 0
+                if (k_msgq_put(&serial_comms_msgq, &outgoing_location, K_NO_WAIT) != 0) {
+                    /* Queue is full, purge it */
+                    k_msgq_purge(&serial_comms_msgq);
+                }
+            }       
         }
         
         // TODO: change this to timestamping
