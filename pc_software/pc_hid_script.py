@@ -76,6 +76,11 @@ positional_data = {
     },
 }
 
+# GLOBAL STORAGES FOR PEDAL_L, PEDAL_R, PEDAL_RUDDER
+pedal_l = 0
+pedal_r = 0
+pedal_rudder = 0
+
 # Calculation angle of rotation (0 to 180 degrees in direction of heading
 def calculate_rudder_angle(rudder_hid_val : int) -> int:
 
@@ -101,81 +106,81 @@ def display_debug_data(rot : int, l_acc : int, r_acc : int, abs_acc : int):
 def display_pos_data(x : int, y : int):
     print("X pos = {0}\nY pos = {1}\n".format(x, y))
 
-# Read data from the device
-while 1:
-    
-    ################ SERIAL WRITE ################
-    # Writing to Bucket of ML x and y
-    hid_device = create_HID_device()
+# ----- ASYNC FUNCS -----
 
-    # Reading data from the pedal device
-    data = hid_device.read(8)
-
-    # Accessing from the HID data fields
-    rudder_val       =   data[2] % HID_MODULUS
-    left_pedal_val   =   data[0] % HID_MODULUS
-    right_pedal_val  =   data[1] % HID_MODULUS
-
-
-    # Setting angle and acceleration data
-    accel_array = calculate_left_right_accel(left_pedal_val, right_pedal_val)
-
-    left_accel, right_accel = calculate_left_right_accel(left_pedal_val, right_pedal_val)
-
-    rudder_rotation = calculate_rudder_angle(rudder_val)
-
-    absolute_accel =  right_accel - left_accel
-
-    # Displaying debug data
-    display_debug_data(rudder_rotation, left_accel, right_accel, absolute_accel)
-
-    ################ SERIAL READ ################
-    # Reading a new line from serial input
-    current_line = serial_port_data.readline().decode("utf-8").strip()
-    # print("CURR LINE = {0}\r\n".format(current_line))
-
-    # Splitting data by commas (for data)
-    split_data = current_line.split(',')
-    # print(split_data)
-
-    positional_data["pos_data"]["x_position"] = int(split_data[0])
-    positional_data["pos_data"]["y_position"] = int(split_data[1])
-
-    # Creating ML Point containing x and y values
-    ml_data_point = Point("positional_data") \
-        .tag("data_type", "pos_data")\
-        .field("x_position", positional_data["pos_data"]["x_position"])\
-        .field("y_position", positional_data["pos_data"]["y_position"])
-    
-    # Writing to Bucket of ML x and y
-    write_api.write(bucket=ml_bucket, org=org, record=ml_data_point)
-
-    display_pos_data(positional_data["pos_data"]["x_position"], positional_data["pos_data"]["y_position"])
-
-
+# Asynchronous reading from HID
 # IMPLEMENT TOMORROW
 async def read_from_hid():
-    # Connect to the HID device
-    device = hid.Device(0x1234, 0x5678) # Replace with the actual VID and PID of your HID device
-    while True:
-        # Read data from the HID device
-        data = device.read(64)
-        # Process the data
-        print("Read data from HID:", data)
-        # Wait for a short duration
-        await asyncio.sleep(0.01)
 
-async def read_from_serial():
-    # Connect to the serial port
-    ser = serial.Serial('/dev/ttyUSB0', 9600) # Replace with the actual port name and baud rate
-    while True:
-        # Read data from the serial port
-        data = ser.read(100)
-        # Process the data
-        print("Read data from serial port:", data)
-        # Wait for a short duration
-        await asyncio.sleep(0.01)
+    hid_device = create_HID_device()
 
-# Create an event loop and run both tasks concurrently
-loop = asyncio.get_event_loop()
-loop.run_until_complete(asyncio.gather(read_from_hid(), read_from_serial()))
+    while True:
+        # Reading data from the pedal device
+        data = hid_device.read(8)
+
+        # Accessing from the HID data fields
+        rudder_val       =   data[2] % HID_MODULUS
+        left_pedal_val   =   data[0] % HID_MODULUS
+        right_pedal_val  =   data[1] % HID_MODULUS
+
+
+        # Setting angle and acceleration data
+
+        left_accel, right_accel = calculate_left_right_accel(left_pedal_val, right_pedal_val)
+
+        rudder_rotation = calculate_rudder_angle(rudder_val)
+
+        absolute_accel =  right_accel - left_accel
+
+        # Displaying debug data
+        # display_debug_data(rudder_rotation, left_accel, right_accel, absolute_accel)
+
+        # assigning to globals
+        pedal_l = left_accel
+        pedal_r = right_accel
+        pedal_rudder = rudder_rotation
+
+        await asyncio.sleep(0.1)
+
+# Asynchronous Reading & Writing From Serial
+async def read_write_serial():
+
+    while True:
+        current_line = serial_port_data.readline().decode("utf-8").strip()
+        # print(current_line)
+
+        # time.sleep(0.01)
+
+        write_str = "pedal {0} {1} {2}\n\n".format(pedal_l, pedal_r, pedal_rudder)
+        print(write_str)
+        # serial_port_data.write(write_str.encode('utf-8'))
+
+        serial_port_data.flush()
+
+        await asyncio.sleep(0.1)
+
+
+def main():
+
+    # subprocess.run(['sudo', 'chmod', '777', '/dev/hidraw1'], capture_output=True, text=True)
+    # subprocess.run(['sudo', 'chmod', '777', '/dev/ttyACM0'], capture_output=True, text=True)
+    # subprocess.run(['sudo', 'chmod', '777', '/dev/ttyACM1'], capture_output=True, text=True)
+
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(asyncio.gather(read_from_hid(), read_write_serial()))
+
+
+
+ # positional_data["pos_data"]["x_position"] = int(split_data[0])
+    # positional_data["pos_data"]["y_position"] = int(split_data[1])
+
+    # # Creating ML Point containing x and y values
+    # ml_data_point = Point("positional_data") \
+    #     .tag("data_type", "pos_data")\
+    #     .field("x_position", positional_data["pos_data"]["x_position"])\
+    #     .field("y_position", positional_data["pos_data"]["y_position"])
+    
+    # # Writing to Bucket of ML x and y
+    # write_api.write(bucket=ml_bucket, org=org, record=ml_data_point)     
+
+main()
