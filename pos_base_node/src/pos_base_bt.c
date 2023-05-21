@@ -15,16 +15,11 @@ bool ble_connected;
 
 static void start_scan(void);
 int sample_time;
-uint16_t current_maj;
 
-uint8_t rx_data[10];
-
-float cont_data[] = {0};
-
+uint8_t current_pos[] = {0, 0};
+uint8_t cont_data[] = {5, 10, 15};
 
 static struct bt_conn *default_conn;
-
-static struct bt_uuid_16 uuid = BT_UUID_INIT_16(0);
 
 uint16_t mobile_uuid[] = {0xd0, 0x92, 0x67, 0x35, 0x78, 0x16, 0x21, 0x91,
                           0x26, 0x49, 0x60, 0xeb, 0x06, 0xa7, 0xca, 0xcb};
@@ -96,7 +91,7 @@ static ssize_t give_cont(struct bt_conn *conn,
 {
     const int16_t *value = attr->user_data;
     printk("hey\n");
-    return bt_gatt_attr_read(conn, attr, buf, len, offset, value, sizeof(remp_data));
+    return bt_gatt_attr_read(conn, attr, buf, len, offset, value, sizeof(cont_data));
 }
 
 static void device_found(const bt_addr_le_t *addr, int8_t rssi, uint8_t type,
@@ -113,8 +108,8 @@ uint8_t read_pos(struct bt_conn *conn, uint8_t err,
                                struct bt_gatt_read_params *params,
                                const void *data, uint16_t length)
 {
-    memcpy(&current_maj, data, 2);
-    printk("%d\n", current_maj);
+    memcpy(current_pos, data, 2);
+    printk("%d %d\n", current_pos[0], current_pos[1]);
     return 0;
 }
 

@@ -11,9 +11,8 @@
 #include <stdlib.h>
 #include <zephyr/drivers/uart.h>
 #include <zephyr/usb/usb_device.h>
-#include <console/console.h>
-#include "../../oslib/pos_base_node/pos_base_bt.h"
-#include "../../oslib/pos_base_node/pos_base_hci.h"
+#include "pos_base_bt.h"
+#include "pos_base_hci.h"
 
 
 #include <ctype.h>

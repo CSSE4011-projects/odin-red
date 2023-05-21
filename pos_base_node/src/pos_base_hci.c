@@ -9,19 +9,14 @@
 struct k_msgq * hci_queue;
 struct k_event *hci_ev;
 
-uint8_t hci_buf[10];
-int16_t rx_buf[] = {0x00, 0x00, 0x00, 0x00};
 sys_slist_t* hci_list;
 
-uint8_t pedals[2];
+uint8_t pedals[3];
 
-int msg_len;
 int period;
 
 static int64_t time_stamp;
 LOG_MODULE_REGISTER(app);
-
-char given_name[10];
 
 struct k_heap node_heap;
 K_HEAP_DEFINE(node_heap, sizeof(uint8_t) * 100);
@@ -33,13 +28,12 @@ static int cmd_pedal(const struct shell *shell, size_t argc, char **argv)
 {
 	pedals[0] = atoi(argv[1]);
 	pedals[1] = atoi(argv[2]);
-	pedals[3] = atoi(argv[3]);
+	pedals[2] = atoi(argv[3]);
 	printk("values: %d, %d, %d\n", pedals[0], pedals[1], pedals[2]);
 	return 0;
 }
 
 SHELL_CMD_ARG_REGISTER(pedal, NULL, "Pedal data received", cmd_pedal, 0, 3);
-
 
 void hci_th(struct Data * input)
 {
