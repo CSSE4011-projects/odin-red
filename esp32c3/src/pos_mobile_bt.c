@@ -149,6 +149,7 @@ static void connected(struct bt_conn *conn, uint8_t err)
 
 static void disconnected(struct bt_conn *conn, uint8_t reason)
 {
+    LOG_INF("Disconnected");
 	bt_connected = false;
 }
 
@@ -192,7 +193,7 @@ static struct bt_conn_auth_cb auth_cb_display = {
 static void bt_ready(void)
 {
     int err = 0;
-    // bt enable
+    err = bt_enable(NULL);
     if (err)
     {
         printk("Bluetooth init failed (err %d)\n", err);

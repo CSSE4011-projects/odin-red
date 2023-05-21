@@ -142,7 +142,7 @@ def read_from_hid():
         pedal_rudder = rudder_rotation
 
 # Asynchronous Reading & Writing From Serial
-def read_write_serial():
+def write_serial():
 
     while True:
         # current_line = serial_port_data.readline().decode("utf-8").strip()
@@ -163,34 +163,45 @@ def read_write_serial():
 
         serial_port_data.flush()
 
+def read_serial():
+    while True:
+        a = serial_port_data.read(1).decode("utf-8")
+        if a == '{':
+            xval = []
+            a = serial_port_data.read(1).decode("utf-8")
+            while a != ',':
+                xval.append(a)
+                a = serial_port_data.read(1).decode("utf-8")
+            x = 0
+            for i in range(len(xval)):
+                x += int(xval[i]) * (10 ** (len(xval) - i - 1))
 
-# def main():
+            yval = []
+            a = serial_port_data.read(1).decode("utf-8")
+            while a != '}':
+                yval.append(a)
+                a = serial_port_data.read(1).decode("utf-8")
+            y = 0
+            for i in range(len(yval)):
+                y += int(yval[i]) * (10 ** (len(yval) - i - 1))
 
-    # subprocess.run(['sudo', 'chmod', '777', '/dev/hidraw1'], capture_output=True, text=True)
-    # subprocess.run(['sudo', 'chmod', '777', '/dev/ttyACM0'], capture_output=True, text=True)
-    # subprocess.run(['sudo', 'chmod', '777', '/dev/ttyACM1'], capture_output=True, text=True)
+        positional_data["pos_data"]["x_position"] = x
+        positional_data["pos_data"]["y_position"] = y
 
-    # loop = asyncio.get_event_loop()
-    # loop.run_until_complete(asyncio.gather(read_from_hid(), read_write_serial()))
-
-
-
- # positional_data["pos_data"]["x_position"] = int(split_data[0])
-    # positional_data["pos_data"]["y_position"] = int(split_data[1])
-
-    # # Creating ML Point containing x and y values
-    # ml_data_point = Point("positional_data") \
-    #     .tag("data_type", "pos_data")\
-    #     .field("x_position", positional_data["pos_data"]["x_position"])\
-    #     .field("y_position", positional_data["pos_data"]["y_position"])
-    
-    # # Writing to Bucket of ML x and y
-    # write_api.write(bucket=ml_bucket, org=org, record=ml_data_point)     
-
-# main()
+        # # Creating ML Point containing x and y values
+        # ml_data_point = Point("positional_data") \
+        #     .tag("data_type", "pos_data")\
+        #     .field("x_position", positional_data["pos_data"]["x_position"])\
+        #     .field("y_position", positional_data["pos_data"]["y_position"])
+        
+        # # # Writing to Bucket of ML x and y
+        # write_api.write(bucket=ml_bucket, org=org, record=ml_data_point)     
 
 hid_thread = th.Thread(target=read_from_hid)
-serial_thread = th.Thread(target=read_write_serial) 
+serial_write_thread = th.Thread(target=write_serial) 
+serial_read_thread = th.Thread(target=read_serial)
 
 hid_thread.start()
-serial_thread.start()
+serial_write_thread.start()
+serial_read_thread.start()
+
