@@ -37,70 +37,29 @@
 #include <zephyr/posix/unistd.h>
 #endif
 
+/* Initialising message queue for control data */
+K_MSGQ_DEFINE(
+    control_msgq,
+    sizeof(struct control_data),
+    CONTROL_MSGQ_MAX_MSG,
+    CONTROL_MSGQ_ALIGN
+);
 
-#define LED0_NODE DT_ALIAS(led0)
+/* Initialising message queue for position data */
+K_MSGQ_DEFINE(
+    pos_msgq,
+    sizeof(struct pos_data),
+    POS_MSGQ_MAX_MSG,
+    POS_MSGQ_ALIGN
+);
+
 static struct bt_conn *default_conn;
-float current_range;
-bool ndata_ready;
-bool data_ready;
-bool esp0_conn_ack;
-bool esp1_conn_ack;
-bool restart_scan;
-
-uint16_t maj_num;
-
-uint8_t num_operational;
-
-uint8_t ultra_val;
-
-uint8_t current_esp;
-uint8_t current_esp_setup;
-
-
 bool bt_connected;
-
-uint8_t current_rssi;
-
-static uint8_t receive[5];
-
-const uint16_t unset_major = 0xFFFF;
-
-
-int data_type;
-
-#define STACKSIZE 2048
-#define PRIORITY 7
-#define MSG_SIZE 32
-#define PI 3.141592654
-
-
-/* queue to store up to 10 messages (aligned to 4-byte boundary) */
-K_MSGQ_DEFINE(uart_msgq, MSG_SIZE, 10, 4);
 
 LOG_MODULE_REGISTER(app);
 
-struct k_event sens;
-
-int msg_len;
-int period;
-
-static int64_t time_stamp;
-uint8_t tx_data[10];
-
-uint16_t current_cont;
-int node_set;
-int connect_attempt;
-
-/* receive buffer used in UART ISR callback */
-static char rx_buf[MSG_SIZE];
-static int rx_buf_pos;
-
+uint8_t current_cont[] = {0, 0, 0};
 uint8_t pos_data[] = {0, 0};
-
-int16_t rx_remp[20];
-uint8_t ultra_data[] = {0, 0, 0, 0};
-
-
 
 static const struct bt_data ad[] = {
     BT_DATA_BYTES(BT_DATA_FLAGS, (BT_LE_AD_GENERAL | BT_LE_AD_NO_BREDR)),
@@ -173,8 +132,8 @@ uint8_t read_cont(struct bt_conn *conn, uint8_t err,
                                struct bt_gatt_read_params *params,
                                const void *data, uint16_t length)
 {
-    memcpy(&current_cont, data, 2);
-    printk("%d\n", current_cont);
+    memcpy(&current_cont, data, 3);
+    printk("%d %d %d\n", current_cont[0], current_cont[1], current_cont[2]);
     return 0;
 }
 
@@ -234,11 +193,35 @@ void ble_connect_main(void)
         .by_uuid.end_handle = BT_ATT_LAST_ATTRIBUTE_HANDLE,
     };
 
+    /* Struct to store all control values */
+    struct control_data control;
+
+    /* Struct to store position values */
+    struct pos_data position;
+
     while (1)
     {
         if (bt_connected) {
             bt_gatt_read(default_conn, &read_cont_params);
+
+            control.pedal_left = current_cont[0];
+            control.pedal_right = current_cont[1];
+            control.rudder_angle = current_cont[2];
+
+            /* Send control data to main */
+            if (k_msgq_put(&control_msgq, &control, K_NO_WAIT) != 0) {
+                /* Queue is full, purge it */
+                k_msgq_purge(&control_msgq);
+            }
+
+            // Check for updated pos from main
+            if (!k_msgq_get(&pos_msgq, &position, K_NO_WAIT)) {
+                memcpy(pos_data, &position.x_pos, 1);
+                memcpy(pos_data + 1, &position.y_pos, 1);
+            }
+
         }
+
         k_msleep(100);
     }
 }

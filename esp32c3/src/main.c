@@ -123,6 +123,12 @@ int main(void)
 
 	/* Struct to send rgb control information to the ahu rgb thread */
 	struct ahu_rgb_colour rgb_colour;
+
+	/* Struct to send position data to the bt thread */
+	struct pos_data position_bt;
+
+	/* Struct to receive control data from the bt thread */
+	struct control_data control;
 	
 	while (1)
 	{
@@ -134,6 +140,26 @@ int main(void)
 		} else {
 			LOG_INF("Got position: (%hhu, %hhu)", position.x, position.y); 
 		}
+
+		/* Check for control data from bt thread */
+		if (!k_msgq_get(&control_msgq, &control, K_NO_WAIT)) {
+			// LACHLAN do something with the rover driver
+			// THESE ARE THE VALUES :)
+			// control.pedal_left;
+			// control.pedal_right;
+			// control.rudder_angle;
+		}
+
+		/* LACHLAN I THINK THIS IS RIGHT BUT CAN YOU CHECK */
+		position_bt.x_pos = position.x;
+		position_bt.y_pos = position.y;
+
+		/* Send position data to bt thread */
+		if (k_msgq_put(&pos_msgq, &position_bt, K_NO_WAIT) != 0) {
+			/* Queue is full, purge it */
+			k_msgq_purge(&pos_msgq);
+		}
+
 	}
 	
 	
