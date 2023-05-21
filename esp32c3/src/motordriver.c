@@ -37,6 +37,9 @@ void motordriver_init(const struct device* dev, uint8_t device_addr)
 
     i2c_reg_read_byte(dev, device_addr, SCMD_DRIVER_ENABLE, &res);
     i2c_reg_write_byte(dev, device_addr, SCMD_BRIDGE, 0x01);
+    
+    // Zero the motors (in case the driver was left powere)
+    motordriver_send_pwm(dev, device_addr, ZERO_SIGNAL); 
 }
 
 int motordriver_send_pwm(const struct device* dev, uint8_t device_addr, uint8_t val)

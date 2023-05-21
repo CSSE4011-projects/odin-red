@@ -153,6 +153,8 @@ Distributed as-is; no warranty is given.
 
 #define CONN_MAX_NUM_TRIES 5
 
+#define ZERO_SIGNAL 127 
+
 extern void motordriver_init(const struct device* dev, uint8_t device_addr);
 
 extern int motordriver_send_pwm(const struct device* dev, uint8_t device_addr, uint8_t val); 
