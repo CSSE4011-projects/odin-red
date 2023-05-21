@@ -128,6 +128,7 @@ void main(void)
             outgoing_location.y_position = pred_location[Y_IDX];
 
             /* Send position to serial comms message queue */
+            // TODO: maybe change to only send position if not 0
             if (k_msgq_put(&serial_comms_msgq, &outgoing_location, K_NO_WAIT) != 0) {
                 /* Queue is full, purge it */
                 k_msgq_purge(&serial_comms_msgq);

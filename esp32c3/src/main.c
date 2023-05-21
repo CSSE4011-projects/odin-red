@@ -9,15 +9,44 @@
 #include <zephyr/drivers/uart.h>
 #include "rovermotor.h"
 #include "roveruart.h"
+#include "ahu_rgb.h"
 //#include "pos_mobile_bt.h"
 #define LOG_LEVEL 4
 LOG_MODULE_REGISTER(main);
+
+// RGB thread stack
+K_THREAD_STACK_DEFINE(ahu_rgb_stack, AHU_RGB_STACK_SIZE);
+struct k_thread ahu_rgb_thread_data;
 
 //  Global to pass to shell commands. 
 struct rovermotor_info motor_control_handle; 
 struct roveruart_info uart_control_handle; 
 const struct device* i2c_dev = DEVICE_DT_GET(DT_NODELABEL(i2c0));
 const struct device* uart_dev = DEVICE_DT_GET(DT_NODELABEL(uart1));
+
+// Helper function definition
+void send_ahu_rgb(uint8_t red, uint8_t green, uint8_t blue);
+
+static int rgb_cmd_callback(const struct shell* shell, size_t argc, char** argv)
+{
+	/* Struct to send rgb control information to the ahu rgb thread */
+	struct ahu_rgb_colour colour;
+	int r = atoi(argv[1]);
+	int g = atoi(argv[2]);
+	int b = atoi(argv[3]);
+
+	if (r >= 0 && g >= 0 && b >= 0
+			&& r < 256 && g < 256 && b < 256) {
+		shell_fprintf(shell, SHELL_NORMAL,
+				"writing rgb <%d,%d,%d>\n", r, g, b);
+		send_ahu_rgb(r, g, b);
+	} else {
+		shell_fprintf(shell, SHELL_ERROR,
+				"invalid rgb, 0 <= rgb values <= 255\n");
+	}
+
+	return 0;
+}
 
 static int rover_cmd_cb(const struct shell* shell, size_t argc, char** argv) 
 {
@@ -46,9 +75,27 @@ int main(void)
 {
     //int err = bt_enable(NULL);
 
+	/* Create a thread to control the ahu rgb led */
+	k_tid_t ahu_rgb_thread_id = k_thread_create(&ahu_rgb_thread_data,
+													ahu_rgb_stack,
+													AHU_RGB_STACK_SIZE,
+													ahu_rgb_thread,
+													NULL, NULL, NULL,
+													AHU_RGB_PRIORITY,
+													0, K_NO_WAIT);
+
 	rovermotor_init(0x5D, 0x5E, i2c_dev, &motor_control_handle); 
 	roveruart_init(uart_dev, &uart_control_handle); 
 	// LOG_INF("Initialized motor handler");
+
+	SHELL_CMD_ARG_REGISTER(
+		rgb,
+		NULL,
+		"rgb <r> <g> <b>",
+		rgb_cmd_callback,
+		4,
+		0
+	);
 
 	SHELL_CMD_ARG_REGISTER(
         rover,
@@ -68,8 +115,10 @@ int main(void)
         0
     );
 	rover_position_info_t position;
+
+	/* Struct to send rgb control information to the ahu rgb thread */
+	struct ahu_rgb_colour rgb_colour;
 	
- 
 	while (1)
 	{
 		// Do nothing - shell command handles it all. 
@@ -85,4 +134,19 @@ int main(void)
 	
 }
 
+/* Send the given rgb value to the ahu rgb led */
+void send_ahu_rgb(uint8_t red, uint8_t green, uint8_t blue)
+{
+	/* Struct to send rgb control information to the ahu rgb thread */
+	struct ahu_rgb_colour colour;
+	colour.red = red;
+	colour.green = green;
+	colour.blue = blue;
+
+	/* Send rgb control struct to rgb message queue */
+	if (k_msgq_put(&ahu_rgb_msgq, &colour, K_NO_WAIT) != 0) {
+		/* Queue is full, purge it */
+		k_msgq_purge(&ahu_rgb_msgq);
+	}
+}
 

@@ -1,3 +1,17 @@
+#include <zephyr/dt-bindings/led/led.h>
+/ {
+	leds {
+		compatible = "gpio-leds";
+		rgb_led_1: led_1 {
+			gpios = <&gpio0 8 GPIO_ACTIVE_HIGH>;
+			label = "RGB LED";
+		};
+	};
+	aliases {
+		rgb = &rgb_led_1;
+	};
+};
+
 &uart1 {
 	status = "okay";
 	current-speed = <115200>;
