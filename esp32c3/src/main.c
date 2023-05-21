@@ -133,7 +133,7 @@ int main(void)
 	while (1)
 	{
 		// Do nothing - shell command handles it all. 
-		k_sleep(K_MSEC(1000));
+		k_sleep(K_MSEC(300));
 		int res = roveruart_get_new_position(&uart_control_handle, &position);
 		if (res) {
 			//LOG_INF("No new messages");
@@ -148,6 +148,7 @@ int main(void)
 			// control.pedal_left;
 			// control.pedal_right;
 			// control.rudder_angle;
+			printk("%d, %d, %d\n", control.pedal_left, control.pedal_right, control.rudder_angle);
 		}
 
 		/* LACHLAN I THINK THIS IS RIGHT BUT CAN YOU CHECK */

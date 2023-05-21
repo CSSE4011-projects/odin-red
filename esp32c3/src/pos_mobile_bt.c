@@ -140,7 +140,7 @@ uint8_t read_cont(struct bt_conn *conn, uint8_t err,
 {
     if (length == 3 && bt_connected) {
         memcpy(&current_cont, data, 3);
-        printk("%d %d %d\n", current_cont[0], current_cont[1], current_cont[2]);
+        //printk("%d %d %d\n", current_cont[0], current_cont[1], current_cont[2]);
     }
     return 0;
 }

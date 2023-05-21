@@ -5,6 +5,7 @@
 #include <zephyr/shell/shell.h>
 #include <zephyr/drivers/uart.h>
 #include "pos_base_hci.h"
+#include "pos_base_bt.h"
 
 struct k_msgq * hci_queue;
 struct k_event *hci_ev;

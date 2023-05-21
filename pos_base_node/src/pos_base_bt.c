@@ -4,6 +4,8 @@
 
 #include "pos_base_bt.h"
 
+LOG_MODULE_REGISTER(bt);
+
 /* Initialising message queue for control data */
 K_MSGQ_DEFINE(
     control_msgq,
@@ -208,12 +210,8 @@ void bt_read(void)
 
     k_msleep(1000);
 
-    int timeStamp = 0;
     sample_time = 0;
-    uint32_t events;
-    uint32_t data_events;
     get_node_params = false;
-    int x = 1;
 
     struct control_data control;
 
@@ -227,8 +225,8 @@ void bt_read(void)
 
             // Check for updated pos from main
             if (!k_msgq_get(&control_msgq, &control, K_NO_WAIT)) {
-                cont_data[0] = control.left_pedal;
-                cont_data[1] = control.right_pedal;
+                cont_data[0] = control.pedal_left;
+                cont_data[1] = control.pedal_right;
                 cont_data[2] = control.rudder_angle;
             }
         }
@@ -240,23 +238,12 @@ void bt_read(void)
 
 void bt_th(struct Data * input)
 {
-
-    sys_slist_init(input->n_list);
-    bt_list = input->n_list;
-	bt_queue = input->msgq;
-    bt_ev = input->event;
-    remp_data[0] = 28.3;
-
-	uint8_t bt_buf[10];
 	int err;
-
 	err = bt_enable(NULL);
 	if (err) {
 		LOG_INF("Bluetooth init failed (err %d)\n", err);
 		return;
 	}
-
-    settings_load();
 
     start_scan();
 
