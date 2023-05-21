@@ -1,6 +1,7 @@
 import hid
 import asyncio
 import subprocess
+import threading as th
 
 # Web Server Imports
 import influxdb_client, os, time
@@ -24,7 +25,7 @@ if not installed:
 
 # Serial-Parameters
 INITIAL_TIME = 0
-SERIAL_PORT_NAME = '/dev/ttyACM0'
+SERIAL_PORT_NAME = '/dev/ttyACM3'
 SERIAL_BAUD_RATE = 115200
 
 serial_port_data = ser.Serial(SERIAL_PORT_NAME, SERIAL_BAUD_RATE)
@@ -110,7 +111,7 @@ def display_pos_data(x : int, y : int):
 
 # Asynchronous reading from HID
 # IMPLEMENT TOMORROW
-async def read_from_hid():
+def read_from_hid():
 
     hid_device = create_HID_device()
 
@@ -140,34 +141,37 @@ async def read_from_hid():
         pedal_r = right_accel
         pedal_rudder = rudder_rotation
 
-        await asyncio.sleep(0.1)
-
 # Asynchronous Reading & Writing From Serial
-async def read_write_serial():
+def read_write_serial():
 
     while True:
-        current_line = serial_port_data.readline().decode("utf-8").strip()
+        # current_line = serial_port_data.readline().decode("utf-8").strip()
         # print(current_line)
 
         # time.sleep(0.01)
-
-        write_str = "pedal {0} {1} {2}\n\n".format(pedal_l, pedal_r, pedal_rudder)
-        print(write_str)
+        write_str = "pedal {0} {1} {2}".format(pedal_l, pedal_r, pedal_rudder)
+        # print(write_str)
         # serial_port_data.write(write_str.encode('utf-8'))
+
+        for i in range(2):
+            for j in range(len(write_str)):
+                serial_port_data.write(write_str[j].encode("utf-8"))
+            serial_port_data.write('\n'.encode("utf-8"))
+
+        
+
 
         serial_port_data.flush()
 
-        await asyncio.sleep(0.1)
 
-
-def main():
+# def main():
 
     # subprocess.run(['sudo', 'chmod', '777', '/dev/hidraw1'], capture_output=True, text=True)
     # subprocess.run(['sudo', 'chmod', '777', '/dev/ttyACM0'], capture_output=True, text=True)
     # subprocess.run(['sudo', 'chmod', '777', '/dev/ttyACM1'], capture_output=True, text=True)
 
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(asyncio.gather(read_from_hid(), read_write_serial()))
+    # loop = asyncio.get_event_loop()
+    # loop.run_until_complete(asyncio.gather(read_from_hid(), read_write_serial()))
 
 
 
@@ -183,4 +187,10 @@ def main():
     # # Writing to Bucket of ML x and y
     # write_api.write(bucket=ml_bucket, org=org, record=ml_data_point)     
 
-main()
+# main()
+
+hid_thread = th.Thread(target=read_from_hid)
+serial_thread = th.Thread(target=read_write_serial) 
+
+hid_thread.start()
+serial_thread.start()
