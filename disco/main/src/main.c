@@ -114,22 +114,24 @@ void main(void)
 		k_msgq_get(&angle_msgq, &angle, K_NO_WAIT);
 
 		/* Check for distances data */
-		k_msgq_get(&distances_msgq, &distances, K_NO_WAIT);
+		if (!k_msgq_get(&distances_msgq, &distances, K_NO_WAIT)) {
 
-        predict_location(angle.angle,
-                (distances.front_distance + FRONT_OFFSET_MM) / 10,
-                (distances.back_distance + BACK_OFFSET_MM) / 10,
-                (distances.left_distance + LEFT_OFFSET_MM) / 10,
-                (distances.right_distance + RIGHT_OFFSET_MM) / 10,
-                pred_location);
+            predict_location(angle.angle,
+                    (distances.front_distance + FRONT_OFFSET_MM) / 10,
+                    (distances.back_distance + BACK_OFFSET_MM) / 10,
+                    (distances.left_distance + LEFT_OFFSET_MM) / 10,
+                    (distances.right_distance + RIGHT_OFFSET_MM) / 10,
+                    pred_location);
 
-        outgoing_location.x_position = pred_location[X_IDX];
-        outgoing_location.y_position = pred_location[Y_IDX];
 
-        /* Send position to serial comms message queue */
-        if (k_msgq_put(&serial_comms_msgq, &outgoing_location, K_NO_WAIT) != 0) {
-            /* Queue is full, purge it */
-            k_msgq_purge(&serial_comms_msgq);
+            outgoing_location.x_position = pred_location[X_IDX];
+            outgoing_location.y_position = pred_location[Y_IDX];
+
+            /* Send position to serial comms message queue */
+            if (k_msgq_put(&serial_comms_msgq, &outgoing_location, K_NO_WAIT) != 0) {
+                /* Queue is full, purge it */
+                k_msgq_purge(&serial_comms_msgq);
+            }        
         }
         
         // TODO: change this to timestamping

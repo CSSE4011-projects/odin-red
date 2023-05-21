@@ -9,6 +9,9 @@ K_MSGQ_DEFINE(
     DISTANCE_MSGQ_ALIGN
 );
 
+#define SAMPLE_TIME_MS 		500
+#define SENSOR_NO_RESPONSE 	-1
+
 /* Entry point to distance sensors thread */
 void distance_sensors_thread(void *, void *, void *)
 {
@@ -20,6 +23,7 @@ void distance_sensors_thread(void *, void *, void *)
 
     /* Variables to store sensor values */
 	struct sensor_value front_value, back_value, left_value, right_value;
+	double front_d_double, back_d_double, left_d_double, right_d_double;
 
     /* Struct for sending distances through msgq */
     struct distance_data distances;
@@ -72,6 +76,9 @@ void distance_sensors_thread(void *, void *, void *)
     sensor_sample_fetch(vl53l1x_left_dev);
     sensor_sample_fetch(vl53l1x_right_dev);
 
+	uint32_t prev_time = k_uptime_get_32();
+	uint32_t current_time;
+
     while (1) {
 
         /* Trigger sensors to read new values and get new measurements */
@@ -87,19 +94,37 @@ void distance_sensors_thread(void *, void *, void *)
         sensor_sample_fetch(vl53l1x_right_dev);
 		sensor_channel_get(vl53l1x_right_dev, SENSOR_CHAN_DISTANCE, &right_value);
 
-        distances.front_distance = sensor_value_to_double(&front_value);
-        distances.back_distance = sensor_value_to_double(&back_value);
-        distances.left_distance = sensor_value_to_double(&left_value);
-        distances.right_distance = sensor_value_to_double(&right_value);
+		front_d_double = sensor_value_to_double(&front_value);
+		back_d_double = sensor_value_to_double(&back_value);
+		left_d_double = sensor_value_to_double(&left_value);
+		right_d_double = sensor_value_to_double(&right_value);
 
-		// TODO: change this to only send once
+		if (front_d_double != SENSOR_NO_RESPONSE) {
+			distances.front_distance = front_d_double;
+		}
+
+		if (back_d_double != SENSOR_NO_RESPONSE) {
+			distances.back_distance = back_d_double;
+		}
+
+		if (left_d_double != SENSOR_NO_RESPONSE) {
+			distances.left_distance = left_d_double;
+		}
+
+		if (right_d_double != SENSOR_NO_RESPONSE) {
+			distances.right_distance = right_d_double;
+		}
+
         /* Send distances data to message queue */
-        if (k_msgq_put(&distances_msgq, &distances, K_NO_WAIT) != 0) {
-            /* Queue is full, purge it */
-            k_msgq_purge(&distances_msgq);
-        }
+		current_time = k_uptime_get_32();
+        if (current_time - prev_time > SAMPLE_TIME_MS) {
+			if (k_msgq_put(&distances_msgq, &distances, K_NO_WAIT) != 0) {
+				/* Queue is full, purge it */
+				k_msgq_purge(&distances_msgq);
+			}
+			prev_time = current_time;
+		}
 
-        // TODO: change this to timestamping to keep refresh rate constant
 		k_sleep(K_MSEC(10));
     }
 }
