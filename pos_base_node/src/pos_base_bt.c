@@ -17,7 +17,7 @@ static void start_scan(void);
 int sample_time;
 
 uint8_t current_pos[] = {0, 0};
-uint8_t cont_data[] = {5, 10, 15};
+uint8_t cont_data[] = {0, 0, 0};
 
 static struct bt_conn *default_conn;
 
@@ -56,14 +56,14 @@ static bool check_dev(struct bt_data *data, void *user_data)
         if (matchedCount == UUID_BUFFER_SIZE)
         {
             //MOBILE UUID MATCHED
-            printk("Mobile UUID Found, attempting to connect\n");
+            LOG_INF("Mobile UUID Found, attempting to connect\n");
 
             int err = bt_le_scan_stop();
             k_msleep(10);
 
             if (err)
             {
-                printk("Stop LE scan failed (err %d)\n", err);
+                LOG_INF("Stop LE scan failed (err %d)\n", err);
                 return true;
             }
 
@@ -73,7 +73,7 @@ static bool check_dev(struct bt_data *data, void *user_data)
                                     param, &default_conn);
             if (err)
             {
-                printk("Create conn failed (err %d)\n", err);
+                LOG_INF("Create conn failed (err %d)\n", err);
                 start_scan();
             }
 
@@ -90,7 +90,6 @@ static ssize_t give_cont(struct bt_conn *conn,
                           uint16_t len, uint16_t offset)
 {
     const int16_t *value = attr->user_data;
-    printk("hey\n");
     return bt_gatt_attr_read(conn, attr, buf, len, offset, value, sizeof(cont_data));
 }
 
@@ -109,7 +108,6 @@ uint8_t read_pos(struct bt_conn *conn, uint8_t err,
                                const void *data, uint16_t length)
 {
     memcpy(current_pos, data, 2);
-    printk("%d %d\n", current_pos[0], current_pos[1]);
     return 0;
 }
 
@@ -128,11 +126,11 @@ static void start_scan(void)
 
 	err = bt_le_scan_start(BT_LE_SCAN_PASSIVE, device_found);
 	if (err) {
-		printk("Scanning failed to start (err %d)\n", err);
+		LOG_INF("Scanning failed to start (err %d)\n", err);
 		return;
 	}
 
-	printk("Scanning successfully started\n");
+	LOG_INF("Scanning successfully started\n");
 }
 
 static void connected(struct bt_conn *conn, uint8_t err)
@@ -143,7 +141,7 @@ static void connected(struct bt_conn *conn, uint8_t err)
 
     if (err)
     {
-        printk("Failed to connect to %s (%u)\n", addr, err);
+        LOG_INF("Failed to connect to %s (%u)\n", addr, err);
 
         bt_conn_unref(default_conn);
         default_conn = NULL;
@@ -157,7 +155,7 @@ static void connected(struct bt_conn *conn, uint8_t err)
         return;
     }
     ble_connected = true;
-    printk("Connected: %s\n", addr);
+    LOG_INF("Connected: %s\n", addr);
 }
 
 static void disconnected(struct bt_conn *conn, uint8_t reason)
@@ -169,7 +167,7 @@ static void disconnected(struct bt_conn *conn, uint8_t reason)
 
     bt_addr_le_to_str(bt_conn_get_dst(conn), addr, sizeof(addr));
 
-    printk("Disconnected: %s (reason 0x%02x)\n", addr, reason);
+    LOG_INF("Disconnected: %s (reason 0x%02x)\n", addr, reason);
 
     bt_conn_unref(default_conn);
     default_conn = NULL;
@@ -209,17 +207,24 @@ void bt_read(void)
     get_node_params = false;
     int x = 1;
 
+    struct control_data control;
+
     while (1)
     {
-
-
-        printk("{102,32}");
         if (ble_connected)
         {
             bt_gatt_read(default_conn, &read_pos_params);
 
+            printk("{%d, %d}\n", current_pos[0], current_pos[1]);
+
+            // Check for updated pos from main
+            if (!k_msgq_get(&control_msgq, &control, K_NO_WAIT)) {
+                cont_data[0] = control.left_pedal;
+                cont_data[1] = control.right_pedal;
+                cont_data[2] = control.rudder_angle;
+            }
         }
-        k_msleep(100);
+        k_msleep(200);
     }
 
 }
@@ -239,7 +244,7 @@ void bt_th(struct Data * input)
 
 	err = bt_enable(NULL);
 	if (err) {
-		printk("Bluetooth init failed (err %d)\n", err);
+		LOG_INF("Bluetooth init failed (err %d)\n", err);
 		return;
 	}
 

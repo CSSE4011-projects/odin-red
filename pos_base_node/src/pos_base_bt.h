@@ -30,4 +30,14 @@
 void bt_th(struct Data*);
 void bt_read(void);
 
+/* Message queue for control data */
+extern struct k_msgq control_msgq;
+
+/* Struct for control data */
+struct control_data {
+    uint8_t pedal_left;
+    uint8_t pedal_right;
+    uint8_t rudder_angle;
+};
+
 #endif

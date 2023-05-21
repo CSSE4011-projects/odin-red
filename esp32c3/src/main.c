@@ -73,8 +73,8 @@ static int reset_angle_cmd_cb(const struct shell* shell, size_t argc, char** arg
 #define STACKSIZE 1024
 #define PRIORITY 7
 #define MSG_SIZE 32
-//K_THREAD_DEFINE(ble_id, STACKSIZE * 4, ble_connect_main, NULL, NULL, NULL,
-//		PRIORITY, 0, 0);
+K_THREAD_DEFINE(ble_id, STACKSIZE * 4, ble_connect_main, NULL, NULL, NULL,
+		PRIORITY, 0, 0);
 
 int main(void) 
 {

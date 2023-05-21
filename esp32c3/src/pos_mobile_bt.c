@@ -102,8 +102,14 @@ BT_GATT_SERVICE_DEFINE(mobile_svc,
 
 static void connected(struct bt_conn *conn, uint8_t err)
 {
+    if (err) {
+		LOG_ERR("Connection failed (err 0x%02x)\n", err);
+        bt_connected = false;
+	} else {
+		LOG_INF("Connected");
+        bt_connected = true;
+	}
     default_conn = conn;
-	bt_connected = true;
 }
 
 static void disconnected(struct bt_conn *conn, uint8_t reason)
@@ -132,8 +138,10 @@ uint8_t read_cont(struct bt_conn *conn, uint8_t err,
                                struct bt_gatt_read_params *params,
                                const void *data, uint16_t length)
 {
-    memcpy(&current_cont, data, 3);
-    printk("%d %d %d\n", current_cont[0], current_cont[1], current_cont[2]);
+    if (length == 3 && bt_connected) {
+        memcpy(&current_cont, data, 3);
+        printk("%d %d %d\n", current_cont[0], current_cont[1], current_cont[2]);
+    }
     return 0;
 }
 
@@ -179,11 +187,9 @@ static void bt_ready(void)
 void ble_connect_main(void)
 {
 	bt_ready();
-    
 
     bt_conn_cb_register(&conn_callbacks);
     bt_conn_auth_cb_register(&auth_cb_display);
-
 
     static struct bt_gatt_read_params read_cont_params = {
         .func = read_cont,
@@ -216,12 +222,12 @@ void ble_connect_main(void)
 
             // Check for updated pos from main
             if (!k_msgq_get(&pos_msgq, &position, K_NO_WAIT)) {
-                memcpy(pos_data, &position.x_pos, 1);
-                memcpy(pos_data + 1, &position.y_pos, 1);
+                pos_data[0] = position.x_pos;
+                pos_data[1] = position.y_pos;
             }
 
         }
 
-        k_msleep(100);
+        k_msleep(500);
     }
 }

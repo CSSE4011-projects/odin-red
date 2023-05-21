@@ -11,8 +11,6 @@ struct k_event *hci_ev;
 
 sys_slist_t* hci_list;
 
-uint8_t pedals[3];
-
 int period;
 
 static int64_t time_stamp;
@@ -26,10 +24,16 @@ BUILD_ASSERT(DT_NODE_HAS_COMPAT(DT_CHOSEN(zephyr_shell_uart), zephyr_cdc_acm_uar
 
 static int cmd_pedal(const struct shell *shell, size_t argc, char **argv)
 {
-	pedals[0] = atoi(argv[1]);
-	pedals[1] = atoi(argv[2]);
-	pedals[2] = atoi(argv[3]);
-	printk("values: %d, %d, %d\n", pedals[0], pedals[1], pedals[2]);
+	/* Send control data to bt */
+	struct control_data pedal_data;
+	pedal_data.pedal_left = atoi(argv[1]);
+	pedal_data.pedal_right = atoi(argv[2]);
+	pedal_data.rudder_angle = atoi(argv[3]);
+	if (k_msgq_put(&control_msgq, &pedal_data, K_NO_WAIT) != 0) {
+		/* Queue is full, purge it */
+		k_msgq_purge(&control_msgq);
+	}
+	
 	return 0;
 }
 
