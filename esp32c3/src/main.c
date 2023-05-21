@@ -11,7 +11,7 @@
 #include "roveruart.h"
 #include "ahu_rgb.h"
 #include <math.h> 
-//#include "pos_mobile_bt.h"
+#include "pos_mobile_bt.h"
 #define LOG_LEVEL 4
 LOG_MODULE_REGISTER(main);
 
