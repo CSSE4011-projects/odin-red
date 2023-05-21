@@ -238,6 +238,8 @@ void bt_th(struct Data * input)
 		return;
 	}
 
+    settings_load();
+
     start_scan();
 
     while (1) {
