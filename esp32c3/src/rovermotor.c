@@ -69,6 +69,18 @@ void rovermotor_handler(void* handler, void*, void* )
             // Adjust for forward velocity - increase vel of each motor. 
             left += ((int) (instruction.velocity)) * FWD_VELOCITY_RATE_CONST;
             right += ((int) (instruction.velocity)) * FWD_VELOCITY_RATE_CONST; 
+            LOG_INF("Left: %i, right: %i", left, right);
+            if (left > 127) {
+                left = 127; 
+            } else if (left < -128) {
+                left = -128; 
+            }
+
+            if (right > 127) {
+                right = 127; 
+            } else if (right < -128) {
+                right = -128; 
+            }
             // Map int8 range to 0-255 for motor drive. 
             uint8_t left_motor_cmd = left + 127; 
             uint8_t right_motor_cmd = right + 127; 
