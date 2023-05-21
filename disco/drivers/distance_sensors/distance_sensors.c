@@ -42,7 +42,7 @@ void distance_sensors_thread(void *, void *, void *)
     struct sensor_value vl53l1x_attr;
 
 	/* Set distance mode to medium */
-	vl53l1x_attr.val1 = 2;
+	vl53l1x_attr.val1 = 1;
 	vl53l1x_attr.val2 = 0;
 
 	if (sensor_attr_set(vl53l1x_front_dev, SENSOR_CHAN_DISTANCE,

@@ -16,7 +16,7 @@
 #define MAGN_Y_SCALER   ((MAGN_Y_MAX - MAGN_Y_MIN) / 2)
 #define MAGN_Y_OFFSET   (MAGN_Y_SCALER - MAGN_Y_MAX)
 
-#define DELAY_MS        200
+#define DELAY_MS        200.0
 
 /* Initialising message queue for sending angle data */
 K_MSGQ_DEFINE(
@@ -81,6 +81,8 @@ void angle_sensors_thread(void *, void *, void *)
         prev_angle += 360;
     }
 
+    prev_angle = 0;
+
     /* Initialise reference angle to 0 degrees */
     double reference_angle = 0;
 
@@ -114,7 +116,7 @@ void angle_sensors_thread(void *, void *, void *)
         /* Use sensor fusion to update the angle based on a linear
             combination between the new angle and the old angle
             combined with the angular velocity */
-	    prev_angle = GYRO_WEIGHT * (prev_angle + (gyro_z * (DELAY_MS/1000))) + MAGN_WEIGHT * angle;
+	    prev_angle = GYRO_WEIGHT * (prev_angle + (gyro_z * (DELAY_MS/1000.0))) + MAGN_WEIGHT * angle;
 		if (prev_angle < 0) {
 			prev_angle += 360;
 		} else if (prev_angle >= 360) {
