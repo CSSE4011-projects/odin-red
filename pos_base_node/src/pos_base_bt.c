@@ -4,6 +4,14 @@
 
 #include "pos_base_bt.h"
 
+/* Initialising message queue for control data */
+K_MSGQ_DEFINE(
+    control_msgq,
+    sizeof(struct control_data),
+    CONTROL_MSGQ_MAX_MSG,
+    CONTROL_MSGQ_ALIGN
+);
+
 struct k_msgq *bt_queue;
 struct k_event *bt_ev;
 struct k_event data_ev;
