@@ -210,8 +210,12 @@ void bt_read(void)
 
     k_msleep(1000);
 
+    int timeStamp = 0;
     sample_time = 0;
+    uint32_t events;
+    uint32_t data_events;
     get_node_params = false;
+    int x = 1;
 
     struct control_data control;
 
@@ -238,12 +242,23 @@ void bt_read(void)
 
 void bt_th(struct Data * input)
 {
+
+    sys_slist_init(input->n_list);
+    bt_list = input->n_list;
+	bt_queue = input->msgq;
+    bt_ev = input->event;
+    remp_data[0] = 28.3;
+
+	uint8_t bt_buf[10];
 	int err;
+
 	err = bt_enable(NULL);
 	if (err) {
 		LOG_INF("Bluetooth init failed (err %d)\n", err);
 		return;
 	}
+
+    settings_load();
 
     start_scan();
 
