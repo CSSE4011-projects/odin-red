@@ -24,7 +24,6 @@ bool ble_connected;
 #define UUID_BUFFER_SIZE 16
 
 static void start_scan(void);
-int sample_time;
 
 uint8_t current_pos[] = {0, 0};
 uint8_t cont_data[] = {0, 0, 0};
@@ -92,8 +91,6 @@ static bool check_dev(struct bt_data *data, void *user_data)
     }
     return true;
 }
-
-float remp_data[] = {0};
 
 static ssize_t give_cont(struct bt_conn *conn,
                           const struct bt_gatt_attr *attr, void *buf,
@@ -190,14 +187,6 @@ BT_CONN_CB_DEFINE(conn_callbacks) = {
 	.disconnected = disconnected,
 };
 
-
-void timer_expired_handler(struct k_timer *timer)
-{
-	k_timer_start(timer, K_MSEC(sample_time * 1000), K_MSEC(sample_time * 1000));
-}
-
-K_TIMER_DEFINE(log_timer, timer_expired_handler, NULL);
-
 void bt_read(void)
 {
     static struct bt_gatt_read_params read_pos_params = {
@@ -209,13 +198,6 @@ void bt_read(void)
     };
 
     k_msleep(1000);
-
-    int timeStamp = 0;
-    sample_time = 0;
-    uint32_t events;
-    uint32_t data_events;
-    get_node_params = false;
-    int x = 1;
 
     struct control_data control;
 
@@ -247,9 +229,7 @@ void bt_th(struct Data * input)
     bt_list = input->n_list;
 	bt_queue = input->msgq;
     bt_ev = input->event;
-    remp_data[0] = 28.3;
 
-	uint8_t bt_buf[10];
 	int err;
 
 	err = bt_enable(NULL);
@@ -257,8 +237,6 @@ void bt_th(struct Data * input)
 		LOG_INF("Bluetooth init failed (err %d)\n", err);
 		return;
 	}
-
-    settings_load();
 
     start_scan();
 
