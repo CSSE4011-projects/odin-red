@@ -10,6 +10,7 @@
 #include "rovermotor.h"
 #include "roveruart.h"
 #include "ahu_rgb.h"
+#include <math.h> 
 //#include "pos_mobile_bt.h"
 #define LOG_LEVEL 4
 LOG_MODULE_REGISTER(main);
@@ -55,6 +56,10 @@ static int rover_cmd_cb(const struct shell* shell, size_t argc, char** argv)
 	float angle = ((float) (angle_percent)) / 100; 
 	LOG_INF("Commanding speed: %hhi, angle: %f", vel, angle);
 	rovermotor_send_instruction(&motor_control_handle, angle, vel);
+	int8_t r = vel + 127; 
+	int8_t b = (255 - r);
+	int8_t g = (int8_t) (angle * 128) + 127; 
+	send_ahu_rgb(r, g, b); 
 	return 0;
 }
 
