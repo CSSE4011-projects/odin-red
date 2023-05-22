@@ -1,5 +1,4 @@
 import hid
-import asyncio
 import subprocess
 import threading as th
 
@@ -145,13 +144,13 @@ def read_from_hid():
 def write_serial():
 
     while True:
-        # current_line = serial_port_data.readline().decode("utf-8").strip()
-        # print(current_line)
+        current_line = serial_port_data.readline().decode("utf-8").strip()
+        print(current_line)
 
         # time.sleep(0.01)
         write_str = "pedal {0} {1} {2}".format(pedal_l, pedal_r, pedal_rudder)
-        # print(write_str)
-        # serial_port_data.write(write_str.encode('utf-8'))
+        print(write_str)
+        serial_port_data.write(write_str.encode('utf-8'))
 
         for i in range(2):
             for j in range(len(write_str)):
@@ -204,4 +203,3 @@ serial_read_thread = th.Thread(target=read_serial)
 hid_thread.start()
 serial_write_thread.start()
 serial_read_thread.start()
-
