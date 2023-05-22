@@ -24,7 +24,7 @@ if not installed:
 
 # Serial-Parameters
 INITIAL_TIME = 0
-SERIAL_PORT_NAME = '/dev/ttyACM3'
+SERIAL_PORT_NAME = '/dev/ttyACM1'
 SERIAL_BAUD_RATE = 115200
 
 serial_port_data = ser.Serial(SERIAL_PORT_NAME, SERIAL_BAUD_RATE)
@@ -81,6 +81,13 @@ pedal_l = 0
 pedal_r = 0
 pedal_rudder = 0
 
+prev_pedal_l = 0
+prev_pedal_r = 0
+prev_pedal_rudder = 0
+
+x = 0
+y = 0
+
 # Calculation angle of rotation (0 to 180 degrees in direction of heading
 def calculate_rudder_angle(rudder_hid_val : int) -> int:
 
@@ -111,6 +118,13 @@ def display_pos_data(x : int, y : int):
 # Asynchronous reading from HID
 # IMPLEMENT TOMORROW
 def read_from_hid():
+    global pedal_l
+    global pedal_r
+    global pedal_rudder
+
+    global prev_pedal_l
+    global prev_pedal_r
+    global prev_pedal_rudder
 
     hid_device = create_HID_device()
 
@@ -136,20 +150,30 @@ def read_from_hid():
         # display_debug_data(rudder_rotation, left_accel, right_accel, absolute_accel)
 
         # assigning to globals
+        prev_pedal_r = pedal_r
+        prev_pedal_l = pedal_l
+        prev_pedal_rudder = rudder_rotation
+
         pedal_l = left_accel
         pedal_r = right_accel
         pedal_rudder = rudder_rotation
+        time.sleep(0.1)
 
 # Asynchronous Reading & Writing From Serial
 def write_serial():
+    global pedal_l
+    global pedal_r
+    global pedal_rudder
+
+    global prev_pedal_l
+    global prev_pedal_r
+    global prev_pedal_rudder
 
     while True:
-        current_line = serial_port_data.readline().decode("utf-8").strip()
-        print(current_line)
-
-        # time.sleep(0.01)
+        if prev_pedal_l == pedal_l and prev_pedal_r == pedal_r and prev_pedal_rudder == pedal_rudder:
+            continue
         write_str = "pedal {0} {1} {2}".format(pedal_l, pedal_r, pedal_rudder)
-        print(write_str)
+        # print(write_str)
         serial_port_data.write(write_str.encode('utf-8'))
 
         for i in range(2):
@@ -157,35 +181,42 @@ def write_serial():
                 serial_port_data.write(write_str[j].encode("utf-8"))
             serial_port_data.write('\n'.encode("utf-8"))
 
-        
-
-
         serial_port_data.flush()
+        time.sleep(0.1)
 
 def read_serial():
-    while True:
-        a = serial_port_data.read(1).decode("utf-8")
-        if a == '{':
-            xval = []
-            a = serial_port_data.read(1).decode("utf-8")
-            while a != ',':
-                xval.append(a)
-                a = serial_port_data.read(1).decode("utf-8")
-            x = 0
-            for i in range(len(xval)):
-                x += int(xval[i]) * (10 ** (len(xval) - i - 1))
 
-            yval = []
+    global x
+    global y
+    while True:
+        try:
             a = serial_port_data.read(1).decode("utf-8")
-            while a != '}':
-                yval.append(a)
+            if a == '{':
+                xval = []
                 a = serial_port_data.read(1).decode("utf-8")
-            y = 0
-            for i in range(len(yval)):
-                y += int(yval[i]) * (10 ** (len(yval) - i - 1))
+                while a != ',':
+                    xval.append(a)
+                    a = serial_port_data.read(1).decode("utf-8")
+                x = 0
+                for i in range(len(xval)):
+                    x += int(xval[i]) * (10 ** (len(xval) - i - 1))
+
+                yval = []
+                a = serial_port_data.read(1).decode("utf-8")
+                while a != '}':
+                    yval.append(a)
+                    a = serial_port_data.read(1).decode("utf-8")
+                y = 0
+                for i in range(len(yval)):
+                    y += int(yval[i]) * (10 ** (len(yval) - i - 1))
+
+        except ValueError:
+            continue
 
         positional_data["pos_data"]["x_position"] = x
         positional_data["pos_data"]["y_position"] = y
+
+        print("X = {0}, Y = {1}\r\n".format(x, y))
 
         # # Creating ML Point containing x and y values
         # ml_data_point = Point("positional_data") \
@@ -194,7 +225,9 @@ def read_serial():
         #     .field("y_position", positional_data["pos_data"]["y_position"])
         
         # # # Writing to Bucket of ML x and y
-        # write_api.write(bucket=ml_bucket, org=org, record=ml_data_point)     
+        # write_api.write(bucket=ml_bucket, org=org, record=ml_data_point)    
+        # 
+        time.sleep(0.1) 
 
 hid_thread = th.Thread(target=read_from_hid)
 serial_write_thread = th.Thread(target=write_serial) 

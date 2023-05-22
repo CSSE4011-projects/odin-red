@@ -216,7 +216,7 @@ void bt_read(void)
                 cont_data[2] = control.rudder_angle;
             }
         }
-        k_msleep(200);
+        k_msleep(1);
     }
 
 }
