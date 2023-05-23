@@ -27,6 +27,12 @@ const struct device* uart_dev = DEVICE_DT_GET(DT_NODELABEL(uart1));
 
 // Helper function definition
 void send_ahu_rgb(uint8_t red, uint8_t green, uint8_t blue);
+void send_pos_to_bt_thread(struct k_msgq* pos_msgq, struct pos_data* position_bt) ;
+void update_motor_and_rgb(
+	uint8_t left_pedal, 
+	uint8_t right_pedal, 
+	uint8_t rudder_angle, 
+	struct rovermotor_info* motor_handle);
 
 static int rgb_cmd_callback(const struct shell* shell, size_t argc, char** argv)
 {
@@ -54,15 +60,37 @@ static int rover_cmd_cb(const struct shell* shell, size_t argc, char** argv)
 	int8_t vel = atoi(argv[1]); 
 	int angle_percent = atoi(argv[2]); 
 	float angle = ((float) (angle_percent)) / 100; 
-	LOG_INF("Commanding speed: %hhi, angle: %f", vel, angle);
-	rovermotor_send_instruction(&motor_control_handle, angle, vel);
-	int8_t r = vel + 127; 
-	int8_t b = (255 - r);
-	int8_t g = (int8_t) (angle * 128) + 127; 
-	send_ahu_rgb(r, g, b); 
+	//LOG_INF("Commanding speed: %hhi, angle: %f", vel, angle);
+	LOG_ERR("Deprecated");
+	//update_motor_and_rgb(vel, angle, &motor_control_handle); 
 	return 0;
 }
 
+
+/** 
+ * Abstraction to handle setting motor turn rate and forward speed based on 
+ * pedal position and 'angle' 
+ */
+void update_motor_and_rgb(
+	uint8_t left_pedal, 
+	uint8_t right_pedal, 
+	uint8_t rudder_angle, 
+	struct rovermotor_info* motor_handle) 
+{
+	// Convert 0 <= X <= 180 to -1 <= y <= +1 for rotation rate target. 
+	int8_t rudder_centred_at_zero = ((int8_t) (rudder_angle)) - 90; 
+	float angle_command = ((float)  (rudder_centred_at_zero)) / 90; 
+
+	// Consider velocity forwards as difference between right and left pedal. 
+	// Offset so full left pedal zero right is full reverse. 
+	int8_t fwd_vel = ((int) (right_pedal) - (int) (left_pedal)) - 128;
+	rovermotor_send_instruction(motor_handle, angle_command, fwd_vel);
+
+	int8_t r = fwd_vel + 127; 
+	int8_t b = (255 - r);
+	int8_t g = (int8_t) (angle_command * 128) + 127; 
+	send_ahu_rgb(r, g, b); 
+}
 
 static int reset_angle_cmd_cb(const struct shell* shell, size_t argc, char** argv) 
 {
@@ -132,13 +160,18 @@ int main(void)
 	
 	while (1)
 	{
-		// Do nothing - shell command handles it all. 
 		k_sleep(K_MSEC(300));
+		// Does not wait for new values to publish. 
 		int res = roveruart_get_new_position(&uart_control_handle, &position);
 		if (res) {
-			//LOG_INF("No new messages");
+			// Nothing pending to send back. 
 		} else {
 			LOG_INF("Got position: (%hhu, %hhu)", position.x, position.y); 
+
+			// Only send position data if we recieve it. 
+			position_bt.x_pos = position.x;
+			position_bt.y_pos = position.y;
+			send_pos_to_bt_thread(&pos_msgq, &position_bt);
 		}
 
 		/* Check for control data from bt thread */
@@ -149,21 +182,34 @@ int main(void)
 			// control.pedal_right;
 			// control.rudder_angle;
 			printk("%d, %d, %d\n", control.pedal_left, control.pedal_right, control.rudder_angle);
+
+			// Assumptions: 
+			// -90 <= RUDDER < 90. 
+			// pedal left and right fully saturate uint8_t range 0-255. 
+			update_motor_and_rgb(
+				control.pedal_left, 
+				control.pedal_right, 
+				control.rudder_angle, 
+				&motor_control_handle);
 		}
 
-		/* LACHLAN I THINK THIS IS RIGHT BUT CAN YOU CHECK */
-		position_bt.x_pos = position.x;
-		position_bt.y_pos = position.y;
+		
 
-		/* Send position data to bt thread */
-		if (k_msgq_put(&pos_msgq, &position_bt, K_NO_WAIT) != 0) {
-			/* Queue is full, purge it */
-			k_msgq_purge(&pos_msgq);
-		}
 
 	}
-	
-	
+}
+
+/**
+ * Sends position to BT thread (see: pos_mobile_bt.c) to be transmitted
+ * to base node. Purges queue and does not send if queue is full. Non-blocking
+ */
+void send_pos_to_bt_thread(struct k_msgq* pos_msgq, struct pos_data* position_bt) 
+{
+	/* Send position data to bt thread */
+	if (k_msgq_put(pos_msgq, position_bt, K_NO_WAIT) != 0) {
+		/* Queue is full, purge it */
+		k_msgq_purge(pos_msgq);
+	}
 }
 
 /* Send the given rgb value to the ahu rgb led */
