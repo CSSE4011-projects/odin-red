@@ -181,7 +181,7 @@ int main(void)
 			// control.pedal_left;
 			// control.pedal_right;
 			// control.rudder_angle;
-			printk("%d, %d, %d\n", control.pedal_left, control.pedal_right, control.rudder_angle);
+			LOG_INF("Received from pedals: %d, %d, %d\n", control.pedal_left, control.pedal_right, control.rudder_angle);
 
 			// Assumptions: 
 			// -90 <= RUDDER < 90. 
