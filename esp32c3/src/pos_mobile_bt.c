@@ -1,34 +1,3 @@
-#include <zephyr/kernel.h>
-#include <zephyr/shell/shell.h>
-#include <version.h>
-#include <zephyr/logging/log.h>
-#include <stdlib.h>
-#include <zephyr/drivers/uart.h>
-#include <zephyr/usb/usb_device.h>
-#include <ctype.h>
-#include <stdio.h>
-#include <math.h>
-
-#include <zephyr/types.h>
-#include <stddef.h>
-#include <errno.h>
-#include <zephyr/zephyr.h>
-
-#include <zephyr/types.h>
-#include <stddef.h>
-#include <zephyr/sys/util.h>
-
-#include <zephyr/bluetooth/bluetooth.h>
-#include <zephyr/bluetooth/hci.h>
-#include <zephyr/bluetooth/conn.h>
-#include <zephyr/bluetooth/uuid.h>
-#include <zephyr/bluetooth/gatt.h>
-#include <zephyr/sys/byteorder.h>
-#include <zephyr/drivers/gpio.h>
-#include <zephyr/devicetree.h>
-
-#include <zephyr/types.h>
-
 #include "pos_mobile_bt.h"
 
 #ifdef CONFIG_ARCH_POSIX
