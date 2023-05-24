@@ -172,17 +172,17 @@ def write_serial():
     while True:
         if prev_pedal_l == pedal_l and prev_pedal_r == pedal_r and prev_pedal_rudder == pedal_rudder:
             continue
-        write_str = "pedal {0} {1} {2}".format(pedal_l, pedal_r, pedal_rudder)
+        write_str = "pedal {0} {1} {2}\r\n".format(pedal_l, pedal_r, pedal_rudder)
         # print(write_str)
         serial_port_data.write(write_str.encode('utf-8'))
 
         for i in range(2):
             for j in range(len(write_str)):
                 serial_port_data.write(write_str[j].encode("utf-8"))
-            serial_port_data.write('\n'.encode("utf-8"))
+                time.sleep(0.01)
 
         serial_port_data.flush()
-        time.sleep(0.1)
+        # time.sleep(0.1)
 
 def read_serial():
 
