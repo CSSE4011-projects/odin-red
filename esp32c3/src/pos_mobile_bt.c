@@ -184,19 +184,21 @@ void ble_connect_main(void)
             control.rudder_angle = current_cont[2];
 
             /* Send control data to main */
+            LOG_INF("Sending to main");
             if (k_msgq_put(&control_msgq, &control, K_NO_WAIT) != 0) {
                 /* Queue is full, purge it */
+                LOG_ERR("Purging control message queue to main. ");
                 k_msgq_purge(&control_msgq);
             }
 
             // Check for updated pos from main
-            if (!k_msgq_get(&pos_msgq, &position, K_NO_WAIT)) {
+            while (!k_msgq_get(&pos_msgq, &position, K_MSEC(200))) {
                 pos_data[0] = position.x_pos;
                 pos_data[1] = position.y_pos;
             }
 
+        } else {
+            k_msleep(100);
         }
-
-        k_msleep(500);
     }
 }
