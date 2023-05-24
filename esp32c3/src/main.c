@@ -80,10 +80,12 @@ void update_motor_and_rgb(
 	// Convert 0 <= X <= 180 to -1 <= y <= +1 for rotation rate target. 
 	int8_t rudder_centred_at_zero = ((int8_t) (rudder_angle)) - 90; 
 	float angle_command = ((float)  (rudder_centred_at_zero)) / 90; 
-
+	LOG_INF("Rudder centred at zero: %i", rudder_centred_at_zero);
+	LOG_INF("Angle cmd: %f", angle_command);
 	// Consider velocity forwards as difference between right and left pedal. 
 	// Offset so full left pedal zero right is full reverse. 
-	int8_t fwd_vel = ((int) (right_pedal) - (int) (left_pedal)) - 128;
+	int8_t fwd_vel = ((int) (right_pedal) - (int) (left_pedal)) / 2;
+	LOG_INF("Fwd vel: %i", fwd_vel);
 	rovermotor_send_instruction(motor_handle, angle_command, fwd_vel);
 
 	int8_t r = fwd_vel + 127; 
