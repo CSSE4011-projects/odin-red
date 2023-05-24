@@ -96,8 +96,17 @@ def calculate_rudder_angle(rudder_hid_val : int) -> int:
 # Calculating acceleration left/ reverse and right/forward (0% to 100%)
 def calculate_left_right_accel(left_pedal_value : int, right_pedal_value : int):
 
-    left_accel = round((MAX_ACCEL * left_pedal_value) / MAX_HID_VAL) % ACCEL_MODULUS
-    right_accel = round(MAX_ACCEL - ((MAX_ACCEL * (MAX_HID_VAL - right_pedal_value))/ 63)) % ACCEL_MODULUS
+    left_accel = round((MAX_ACCEL * left_pedal_value) / MAX_HID_VAL)
+    right_accel = round(MAX_ACCEL - ((MAX_ACCEL * (MAX_HID_VAL - right_pedal_value))/ 63))
+    if left_accel < 0:
+        left_accel = 0
+    elif left_accel > 100:
+        left_accel = 100
+
+    if right_accel < 0:
+        right_accel = 0
+    elif right_accel > 100:
+        right_accel = 100
 
     return left_accel, right_accel
 
@@ -170,8 +179,8 @@ def write_serial():
     global prev_pedal_rudder
 
     while True:
-        if prev_pedal_l == pedal_l and prev_pedal_r == pedal_r and prev_pedal_rudder == pedal_rudder:
-            continue
+        # if prev_pedal_l == pedal_l and prev_pedal_r == pedal_r and prev_pedal_rudder == pedal_rudder:
+        #     continue
         write_str = "pedal {0} {1} {2}\r\n".format(pedal_l, pedal_r, pedal_rudder)
         # print(write_str)
         serial_port_data.write(write_str.encode('utf-8'))
