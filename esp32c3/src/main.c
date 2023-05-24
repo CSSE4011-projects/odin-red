@@ -80,12 +80,9 @@ void update_motor_and_rgb(
 	// Convert 0 <= X <= 180 to -1 <= y <= +1 for rotation rate target. 
 	int8_t rudder_centred_at_zero = ((int8_t) (rudder_angle)) - 90; 
 	float angle_command = ((float)  (rudder_centred_at_zero)) / 90; 
-	LOG_INF("Rudder centred at zero: %i", rudder_centred_at_zero);
-	LOG_INF("Angle cmd: %f", angle_command);
 	// Consider velocity forwards as difference between right and left pedal. 
 	// Offset so full left pedal zero right is full reverse. 
-	int8_t fwd_vel = ((int) (right_pedal) - (int) (left_pedal)) / 2;
-	LOG_INF("Fwd vel: %i", fwd_vel);
+	int8_t fwd_vel = ((int) (right_pedal) - (int) (left_pedal));
 	rovermotor_send_instruction(motor_handle, angle_command, fwd_vel);
 
 	int8_t r = fwd_vel + 127; 
@@ -159,12 +156,12 @@ int main(void)
 
 	/* Struct to receive control data from the bt thread */
 	struct control_data control;
-	
+	int res = 0;
 	while (1)
 	{
-		k_sleep(K_MSEC(300));
+		k_sleep(K_MSEC(200));
 		// Does not wait for new values to publish. 
-		int res = roveruart_get_new_position(&uart_control_handle, &position);
+		res = roveruart_get_new_position(&uart_control_handle, &position);
 		if (res) {
 			// Nothing pending to send back. 
 		} else {
@@ -226,6 +223,7 @@ void send_ahu_rgb(uint8_t red, uint8_t green, uint8_t blue)
 	/* Send rgb control struct to rgb message queue */
 	if (k_msgq_put(&ahu_rgb_msgq, &colour, K_NO_WAIT) != 0) {
 		/* Queue is full, purge it */
+	
 		k_msgq_purge(&ahu_rgb_msgq);
 	}
 }
