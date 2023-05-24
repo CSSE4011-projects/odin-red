@@ -65,6 +65,6 @@ int roveruart_get_new_position(
 		struct roveruart_info* info, 
 		rover_position_info_t* pos) 
 {
-	int res = k_msgq_get(&(info->receive), (void*) pos, K_FOREVER);
+	int res = k_msgq_get(&(info->receive), (void*) pos, K_NO_WAIT);
 	return res; 
 }

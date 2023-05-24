@@ -4,8 +4,8 @@
 #include <zephyr/kernel.h>
 #define ROVERMOTOR_STACK_SIZE 4096
 #define ROVERMOTOR_PRIORITY 14
-#define FWD_VELOCITY_RATE_CONST 0.5
-#define ANGLE_CHANGE_RATE_CONST 60
+#define FWD_VELOCITY_RATE_CONST 1
+#define ANGLE_CHANGE_RATE_CONST 80
 #define LOG_LEVEL 4
 #include <zephyr/logging/log.h>
 #include <zephyr/device.h>
