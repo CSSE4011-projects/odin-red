@@ -26,7 +26,7 @@ bool ble_connected;
 static void start_scan(void);
 
 uint8_t current_pos[] = {0, 0};
-uint8_t cont_data[] = {0, 0, 0};
+uint8_t cont_data[] = {0, 0, 90};
 
 static struct bt_conn *default_conn;
 
@@ -201,22 +201,29 @@ void bt_read(void)
 
     struct control_data control;
 
+	uint32_t prev_time = k_uptime_get_32();
+	uint32_t current_time;
+
     while (1)
     {
         if (ble_connected)
         {
-            bt_gatt_read(default_conn, &read_pos_params);
-
-            printk("{%d, %d}\n", current_pos[0], current_pos[1]);
-
             // Check for updated pos from main
-            if (!k_msgq_get(&control_msgq, &control, K_NO_WAIT)) {
+            while (!k_msgq_get(&control_msgq, &control, K_NO_WAIT)) {
                 cont_data[0] = control.pedal_left;
                 cont_data[1] = control.pedal_right;
                 cont_data[2] = control.rudder_angle;
             }
+
+            current_time = k_uptime_get_32();
+            if (current_time - prev_time > 200) {
+                bt_gatt_read(default_conn, &read_pos_params);
+                printk("{%d, %d}\n", current_pos[0], current_pos[1]);
+                prev_time = current_time;
+            }
+
         }
-        k_msleep(1);
+        k_msleep(200);
     }
 
 }

@@ -28,7 +28,7 @@
 #include "pos_base_hci.h"
 
 /* Macro definitions for control message queue */
-#define CONTROL_MSGQ_MAX_MSG 10
+#define CONTROL_MSGQ_MAX_MSG 20
 #define CONTROL_MSGQ_ALIGN 4
 
 void bt_th(struct Data*);
