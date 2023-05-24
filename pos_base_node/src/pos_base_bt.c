@@ -223,7 +223,7 @@ void bt_read(void)
             }
 
         }
-        k_msleep(200);
+        k_msleep(50);
     }
 
 }
