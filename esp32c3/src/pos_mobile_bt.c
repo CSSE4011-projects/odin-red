@@ -22,6 +22,9 @@ K_MSGQ_DEFINE(
     POS_MSGQ_ALIGN
 );
 
+/* Semaphore to signal refernce angle updates */
+K_SEM_DEFINE(update_ref_angle_sem, 0, 1);
+
 static struct bt_conn *default_conn;
 bool bt_connected;
 
@@ -49,6 +52,9 @@ static struct bt_uuid_128 cont_uuid = BT_UUID_INIT_128(
     0xd8, 0x92, 0x67, 0x35, 0x78, 0x16, 0xa1, 0x91,
     0x26, 0x29, 0x60, 0xeb, 0x46, 0xa7, 0xca, 0xcb);
 
+static struct bt_uuid_128 angle_uuid = BT_UUID_INIT_128(
+    0xd8, 0x92, 0x67, 0x35, 0x50, 0x16, 0x21, 0x91,
+    0x26, 0x49, 0x06, 0xeb, 0x06, 0xa7, 0x23, 0xcb);
 
 
 static ssize_t give_pos(struct bt_conn *conn,
@@ -60,13 +66,30 @@ static ssize_t give_pos(struct bt_conn *conn,
     return bt_gatt_attr_read(conn, attr, buf, len, offset, value, sizeof(pos_data));
 }
 
+static ssize_t update_angle(struct bt_conn *conn,
+                          const struct bt_gatt_attr *attr, void *buf,
+                          uint16_t len, uint16_t offset)
+{
+    const int16_t *value = NULL;
+    
+    /* Send semaphore to main */
+    k_sem_give(&update_ref_angle_sem);
+
+    return bt_gatt_attr_read(conn, attr, buf, len, offset, value, 0);
+}
+
 BT_GATT_SERVICE_DEFINE(mobile_svc,
                        BT_GATT_PRIMARY_SERVICE(&mobile_uuid),
                        
                        BT_GATT_CHARACTERISTIC(&pos_uuid.uuid,
                                               BT_GATT_CHRC_READ,
                                               BT_GATT_PERM_READ,
-                                              give_pos, NULL, &pos_data),  );
+                                              give_pos, NULL, &pos_data),
+
+                       BT_GATT_CHARACTERISTIC(&angle_uuid.uuid,
+                                              BT_GATT_CHRC_READ,
+                                              BT_GATT_PERM_READ,
+                                              update_angle, NULL, NULL),  );
 
 
 static void connected(struct bt_conn *conn, uint8_t err)

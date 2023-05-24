@@ -173,6 +173,12 @@ int main(void)
 			send_pos_to_bt_thread(&pos_msgq, &position_bt);
 		}
 
+        /* Check if update reference angle semaphore has been given from UART thread */
+        if (!k_sem_take(&update_ref_angle_sem, K_NO_WAIT)) {
+			roveruart_reset_angle(&uart_control_handle);
+			LOG_INF("Resetting angle");
+        }
+
 		/* Check for control data from bt thread */
 		if (!k_msgq_get(&control_msgq, &control, K_NO_WAIT)) {
 			// LACHLAN do something with the rover driver

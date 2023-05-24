@@ -14,6 +14,9 @@ K_MSGQ_DEFINE(
     CONTROL_MSGQ_ALIGN
 );
 
+/* Semaphore to signal refernce angle updates */
+K_SEM_DEFINE(update_ref_angle_sem, 0, 1);
+
 struct k_msgq *bt_queue;
 struct k_event *bt_ev;
 struct k_event data_ev;
@@ -43,6 +46,10 @@ static struct bt_uuid_128 cont_uuid = BT_UUID_INIT_128(
 static struct bt_uuid_128 pos_uuid = BT_UUID_INIT_128(
     0xd8, 0x92, 0x67, 0x35, 0x78, 0x16, 0x21, 0x91,
     0x26, 0x49, 0x60, 0xeb, 0x06, 0xa7, 0xca, 0xcb);
+
+static struct bt_uuid_128 angle_uuid = BT_UUID_INIT_128(
+    0xd8, 0x92, 0x67, 0x35, 0x50, 0x16, 0x21, 0x91,
+    0x26, 0x49, 0x06, 0xeb, 0x06, 0xa7, 0x23, 0xcb);
 
 
 static bool check_dev(struct bt_data *data, void *user_data)
@@ -115,6 +122,13 @@ uint8_t read_pos(struct bt_conn *conn, uint8_t err,
                                const void *data, uint16_t length)
 {
     memcpy(current_pos, data, 2);
+    return 0;
+}
+
+uint8_t update_angle(struct bt_conn *conn, uint8_t err,
+                               struct bt_gatt_read_params *params,
+                               const void *data, uint16_t length)
+{
     return 0;
 }
 
@@ -197,6 +211,14 @@ void bt_read(void)
         .by_uuid.end_handle = BT_ATT_LAST_ATTRIBUTE_HANDLE,
     };
 
+    static struct bt_gatt_read_params update_angle_params = {
+        .func = update_angle,
+        .handle_count = 0,
+        .by_uuid.uuid = &angle_uuid.uuid,
+        .by_uuid.start_handle = BT_ATT_FIRST_ATTRIBUTE_HANDLE,
+        .by_uuid.end_handle = BT_ATT_LAST_ATTRIBUTE_HANDLE,
+    };
+
     k_msleep(1000);
 
     struct control_data control;
@@ -213,6 +235,12 @@ void bt_read(void)
                 cont_data[0] = control.pedal_left;
                 cont_data[1] = control.pedal_right;
                 cont_data[2] = control.rudder_angle;
+            }
+
+            /* Check if update reference angle semaphore has been given */
+            if (!k_sem_take(&update_ref_angle_sem, K_NO_WAIT)) {
+                /* Trigger an update of the reference angle over bt */
+                bt_gatt_read(default_conn, &update_angle_params);
             }
 
             current_time = k_uptime_get_32();

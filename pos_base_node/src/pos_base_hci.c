@@ -38,7 +38,16 @@ static int cmd_pedal(const struct shell *shell, size_t argc, char **argv)
 	return 0;
 }
 
+static int cmd_angle(const struct shell *shell, size_t argc, char **argv)
+{
+	/* Give semaphore to update angle */
+    k_sem_give(&update_ref_angle_sem);
+	
+	return 0;
+}
+
 SHELL_CMD_ARG_REGISTER(pedal, NULL, "Pedal data received", cmd_pedal, 0, 3);
+SHELL_CMD_ARG_REGISTER(angle, NULL, "Update reference angle", cmd_pedal, 0, 0);
 
 void hci_th(struct Data * input)
 {

@@ -62,4 +62,7 @@ struct pos_data {
     uint8_t y_pos;
 };
 
+/* Semaphore for signalling reference angle updates */
+extern struct k_sem update_ref_angle_sem;
+
 #endif
