@@ -157,7 +157,7 @@ def read_from_hid():
         pedal_l = left_accel
         pedal_r = right_accel
         pedal_rudder = rudder_rotation
-        time.sleep(0.1)
+        time.sleep(0.01)
 
 # Asynchronous Reading & Writing From Serial
 def write_serial():
@@ -179,10 +179,9 @@ def write_serial():
         for i in range(2):
             for j in range(len(write_str)):
                 serial_port_data.write(write_str[j].encode("utf-8"))
-                time.sleep(0.01)
 
         serial_port_data.flush()
-        # time.sleep(0.1)
+        time.sleep(0.2)
 
 def read_serial():
 
@@ -218,16 +217,16 @@ def read_serial():
 
         print("X = {0}, Y = {1}\r\n".format(x, y))
 
-        # # Creating ML Point containing x and y values
-        # ml_data_point = Point("positional_data") \
-        #     .tag("data_type", "pos_data")\
-        #     .field("x_position", positional_data["pos_data"]["x_position"])\
-        #     .field("y_position", positional_data["pos_data"]["y_position"])
+        # Creating ML Point containing x and y values
+        ml_data_point = Point("positional_data") \
+            .tag("data_type", "pos_data")\
+            .field("x_position", positional_data["pos_data"]["x_position"])\
+            .field("y_position", positional_data["pos_data"]["y_position"])
         
-        # # # Writing to Bucket of ML x and y
-        # write_api.write(bucket=ml_bucket, org=org, record=ml_data_point)    
-        # 
-        time.sleep(0.1) 
+        # # Writing to Bucket of ML x and y
+        write_api.write(bucket=ml_bucket, org=org, record=ml_data_point)    
+        
+        time.sleep(0.05) 
 
 hid_thread = th.Thread(target=read_from_hid)
 serial_write_thread = th.Thread(target=write_serial) 
