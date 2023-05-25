@@ -34,6 +34,10 @@ void update_motor_and_rgb(
 	uint8_t rudder_angle, 
 	struct rovermotor_info* motor_handle);
 
+
+/** 
+ * Diagnostic command callback 
+ */
 static int rgb_cmd_callback(const struct shell* shell, size_t argc, char** argv)
 {
 	/* Struct to send rgb control information to the ahu rgb thread */
@@ -55,6 +59,10 @@ static int rgb_cmd_callback(const struct shell* shell, size_t argc, char** argv)
 	return 0;
 }
 
+
+/** 
+ * Diagnostic command callback
+ */
 static int rover_cmd_cb(const struct shell* shell, size_t argc, char** argv) 
 {
 	int8_t vel = atoi(argv[1]); 
@@ -120,6 +128,7 @@ int main(void)
 	roveruart_init(uart_dev, &uart_control_handle); 
 	// LOG_INF("Initialized motor handler");
 
+	/* Diagnostic shell commands */
 	SHELL_CMD_ARG_REGISTER(
 		rgb,
 		NULL,
