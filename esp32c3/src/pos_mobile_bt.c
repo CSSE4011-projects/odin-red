@@ -30,7 +30,7 @@ bool bt_connected;
 
 LOG_MODULE_REGISTER(app);
 
-uint8_t current_cont[] = {0, 0, 0};
+uint8_t current_cont[] = {0, 90, 0};
 uint8_t pos_data[] = {0, 0};
 
 static const struct bt_data ad[] = {
@@ -74,6 +74,7 @@ static ssize_t update_angle(struct bt_conn *conn,
     
     /* Send semaphore to main */
     k_sem_give(&update_ref_angle_sem);
+    LOG_ERR("sending semaphore");
 
     return bt_gatt_attr_read(conn, attr, buf, len, offset, value, 0);
 }
@@ -207,7 +208,7 @@ void ble_connect_main(void)
             control.rudder_angle = current_cont[2];
 
             /* Send control data to main */
-            LOG_INF("Sending to main");
+            //LOG_INF("Sending to main");
             if (k_msgq_put(&control_msgq, &control, K_NO_WAIT) != 0) {
                 /* Queue is full, purge it */
                 LOG_ERR("Purging control message queue to main. ");
