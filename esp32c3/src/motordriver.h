@@ -155,8 +155,22 @@ Distributed as-is; no warranty is given.
 
 #define ZERO_SIGNAL 127 
 
+
+/**
+ * initializes an instance of a driver for the Sparkfun Qwiic Motor Driver /
+ * Sparkfun SCMD motor driver, on given uart device, with given device address
+ * @param dev: zephyr i2c device
+ * @param device_addr: i2c address of qwiic motor driver. 
+ */
 extern void motordriver_init(const struct device* dev, uint8_t device_addr);
 
+
+/** 
+ * Sends a value for motor pwm to the motor controller with given i2c addr
+ * @param dev: zephyr i2c device
+ * @param device_addr: qwiic motor driver i2c address
+ * @param val: value to send.
+ */
 extern int motordriver_send_pwm(const struct device* dev, uint8_t device_addr, uint8_t val); 
 
 #endif 
