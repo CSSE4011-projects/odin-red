@@ -121,10 +121,6 @@ def read_from_hid():
     global pedal_r
     global pedal_rudder
 
-    global prev_pedal_l
-    global prev_pedal_r
-    global prev_pedal_rudder
-
     hid_device = create_HID_device()
 
     while True:
