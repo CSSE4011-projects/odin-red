@@ -47,7 +47,7 @@ static int cmd_angle(const struct shell *shell, size_t argc, char **argv)
 }
 
 SHELL_CMD_ARG_REGISTER(pedal, NULL, "Pedal data received", cmd_pedal, 0, 3);
-SHELL_CMD_ARG_REGISTER(angle, NULL, "Update reference angle", cmd_pedal, 0, 0);
+SHELL_CMD_ARG_REGISTER(angle, NULL, "Update reference angle", cmd_angle, 0, 0);
 
 void hci_th(struct Data * input)
 {
