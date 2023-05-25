@@ -116,21 +116,12 @@ void main(void)
 		/* Check for distances data */
 		if (!k_msgq_get(&distances_msgq, &distances, K_NO_WAIT)) {
 
-            printk("%.4f, %.4f, %.4f, %.4f, %.4f\n",
-                    distances.front_distance + FRONT_OFFSET_MM,
-                    distances.back_distance + BACK_OFFSET_MM,
-                    distances.left_distance + LEFT_OFFSET_MM,
-                    distances.right_distance + RIGHT_OFFSET_MM,
-                    angle.angle);
-
             predict_location(angle.angle,
                     (distances.front_distance + FRONT_OFFSET_MM) / 10,
                     (distances.back_distance + BACK_OFFSET_MM) / 10,
                     (distances.left_distance + LEFT_OFFSET_MM) / 10,
                     (distances.right_distance + RIGHT_OFFSET_MM) / 10,
                     pred_location);
-
-            printk("%d %d\n", pred_location[X_IDX], pred_location[Y_IDX]);
 
             /* Ensure position is in bounds */
             for (uint8_t i = 0; i < 2; i++) {
@@ -145,15 +136,12 @@ void main(void)
             outgoing_location.y_position = pred_location[Y_IDX];
 
             /* Send position to serial comms message queue */
-            //if (pred_location[X_IDX] || pred_location[Y_IDX]) { // don't send if both pos are 0
                 if (k_msgq_put(&serial_comms_msgq, &outgoing_location, K_NO_WAIT) != 0) {
                     /* Queue is full, purge it */
                     k_msgq_purge(&serial_comms_msgq);
                 }
-            //}       
         }
         
-        // TODO: change this to timestamping
 		k_sleep(K_MSEC(200));        
     }
 }
