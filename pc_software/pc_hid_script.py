@@ -1,6 +1,11 @@
-import hid
-import subprocess
+# HID Data Import
+import hid # Requires "pip install hid==1.05" and "sudo apt install libhidapi-hiwraw0"
+
+# Python thread library
 import threading as th
+
+# Regular Expression library
+import regex as re
 
 # Web Server Imports
 import influxdb_client, os, time
@@ -10,23 +15,12 @@ from influxdb_client.client.write_api import SYNCHRONOUS
 # Serial Imports
 import serial as ser
 
-# If this does not compile, run this:
-installed = True
-
-if not installed:
-    # Install hid module using pip
-    pip_install = subprocess.run(['pip', 'install', 'hid==1.05'], capture_output=True, text=True)
-    print(pip_install.stdout)
-
-    # Install libhidapi-hidraw0 package using apt
-    apt_install = subprocess.run(['sudo', 'apt', 'install', 'libhidapi-hidraw0'], capture_output=True, text=True)
-    print(apt_install.stdout)
-
 # Serial-Parameters
 INITIAL_TIME = 0
 SERIAL_PORT_NAME = '/dev/ttyACM1'
 SERIAL_BAUD_RATE = 115200
 
+# Creating a serial port object
 serial_port_data = ser.Serial(SERIAL_PORT_NAME, SERIAL_BAUD_RATE)
 
 # Web-Server Parameters
@@ -76,14 +70,10 @@ positional_data = {
     },
 }
 
-# GLOBAL STORAGES FOR PEDAL_L, PEDAL_R, PEDAL_RUDDER
+# GLOBAL STORAGES FOR PEDAL_L, PEDAL_R, PEDAL_RUDDER & x /y POS
 pedal_l = 0
 pedal_r = 0
 pedal_rudder = 0
-
-prev_pedal_l = 0
-prev_pedal_r = 0
-prev_pedal_rudder = 0
 
 x = 0
 y = 0
@@ -98,11 +88,14 @@ def calculate_left_right_accel(left_pedal_value : int, right_pedal_value : int):
 
     left_accel = round((MAX_ACCEL * left_pedal_value) / MAX_HID_VAL)
     right_accel = round(MAX_ACCEL - ((MAX_ACCEL * (MAX_HID_VAL - right_pedal_value))/ 63))
+
+    # Bound the values from going below 0 or above 100
     if left_accel < 0:
         left_accel = 0
     elif left_accel > 100:
         left_accel = 100
 
+    # Bound the values from going below 0 or above 100
     if right_accel < 0:
         right_accel = 0
     elif right_accel > 100:
@@ -122,10 +115,7 @@ def display_debug_data(rot : int, l_acc : int, r_acc : int, abs_acc : int):
 def display_pos_data(x : int, y : int):
     print("X pos = {0}\nY pos = {1}\n".format(x, y))
 
-# ----- ASYNC FUNCS -----
-
-# Asynchronous reading from HID
-# IMPLEMENT TOMORROW
+# HID Read Thread
 def read_from_hid():
     global pedal_l
     global pedal_r
@@ -148,99 +138,108 @@ def read_from_hid():
 
 
         # Setting angle and acceleration data
-
         left_accel, right_accel = calculate_left_right_accel(left_pedal_val, right_pedal_val)
 
         rudder_rotation = calculate_rudder_angle(rudder_val)
 
-        absolute_accel =  right_accel - left_accel
-
-        # Displaying debug data
-        # display_debug_data(rudder_rotation, left_accel, right_accel, absolute_accel)
-
         # assigning to globals
-        prev_pedal_r = pedal_r
-        prev_pedal_l = pedal_l
-        prev_pedal_rudder = rudder_rotation
-
         pedal_l = left_accel
         pedal_r = right_accel
         pedal_rudder = rudder_rotation
+
+        # Sleep so next thread can run
         time.sleep(0.01)
 
-# Asynchronous Reading & Writing From Serial
+# Serial write thread
 def write_serial():
+
+    # Obtaining access to global variables
     global pedal_l
     global pedal_r
     global pedal_rudder
 
-    global prev_pedal_l
-    global prev_pedal_r
-    global prev_pedal_rudder
-
     while True:
-        # if prev_pedal_l == pedal_l and prev_pedal_r == pedal_r and prev_pedal_rudder == pedal_rudder:
-        #     continue
+        
+        # Flush serial port before writing
+        serial_port_data.flush()
+
+        # Write a SHELL command to serial for the NRF52840 to read & callback
         write_str = "pedal {0} {1} {2}\r\n".format(pedal_l, pedal_r, pedal_rudder)
-        # print(write_str)
         serial_port_data.write(write_str.encode('utf-8'))
 
-        for i in range(2):
-            for j in range(len(write_str)):
-                serial_port_data.write(write_str[j].encode("utf-8"))
-
+        # Flush the buffer after we write
         serial_port_data.flush()
+
+        # Sleep and allow other threads to run
         time.sleep(0.2)
 
+# Serial read thread
 def read_serial():
 
     global x
     global y
+    
     while True:
+        
+        # Filtering the UART and colour in the serial port read
+        line = serial_port_data.readline().decode("utf-8")
+        line = re.sub(r'\x1b(\[.*?[@-~]|\].*?(\x07|\x1b\\))', '', line)
+        line = line.replace('uart:~$ ', '')
+        
+        # If we experience a value conversion error
+        # We want to conitnue for the next read
         try:
-            a = serial_port_data.read(1).decode("utf-8")
-            if a == '{':
-                xval = []
-                a = serial_port_data.read(1).decode("utf-8")
-                while a != ',':
-                    xval.append(a)
-                    a = serial_port_data.read(1).decode("utf-8")
-                x = 0
-                for i in range(len(xval)):
-                    x += int(xval[i]) * (10 ** (len(xval) - i - 1))
+            # Only extract x and y from paranthesised messages read from serial
+            if line[0] != '{':
+                continue
+            else:
+                # Remove the curly braces, and split the numbers by commas
+                line = line[1:-3]
+                line = line.split(',')
 
-                yval = []
-                a = serial_port_data.read(1).decode("utf-8")
-                while a != '}':
-                    yval.append(a)
-                    a = serial_port_data.read(1).decode("utf-8")
-                y = 0
-                for i in range(len(yval)):
-                    y += int(yval[i]) * (10 ** (len(yval) - i - 1))
+                # Access, convert and assign the x and y values
+                x_str = line[0]
+                y_str = line[1]
+                x = int(x_str)
+                y = int(y_str)
 
         except ValueError:
             continue
+        
+        # Wrap around values that are out of bounds
+        if (x >= 300) or (x <= 0):
+            x = 0
 
+        if (y >= 300) or (y <= 0):
+            y = 0
+
+        # Store the data in the dictionary
         positional_data["pos_data"]["x_position"] = x
         positional_data["pos_data"]["y_position"] = y
 
+        # Debug Data - Not part of implementation
         print("X = {0}, Y = {1}\r\n".format(x, y))
 
         # Creating ML Point containing x and y values
         ml_data_point = Point("positional_data") \
             .tag("data_type", "pos_data")\
-            .field("x_position", positional_data["pos_data"]["x_position"])\
-            .field("y_position", positional_data["pos_data"]["y_position"])
+            .field("x_position", x)\
+            .field("y_position", y)
         
         # # Writing to Bucket of ML x and y
         write_api.write(bucket=ml_bucket, org=org, record=ml_data_point)    
-        
-        time.sleep(0.05) 
 
+        # Sleep and allow next thread to run
+        time.sleep(0.1)
+
+    
+
+# Initialise threads with function references
 hid_thread = th.Thread(target=read_from_hid)
 serial_write_thread = th.Thread(target=write_serial) 
 serial_read_thread = th.Thread(target=read_serial)
 
+# Start threads
 hid_thread.start()
 serial_write_thread.start()
 serial_read_thread.start()
