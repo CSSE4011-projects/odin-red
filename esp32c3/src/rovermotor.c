@@ -66,10 +66,12 @@ void rovermotor_handler(void* handler, void*, void* )
             // Turning only - left will move at opposite speed to right
             int right = left * -1; 
 
-            // Adjust for forward velocity - increase vel of each motor. 
+            // Adjust for forward velocity - increase vel of each motor to retain turning.
             left += ((int) (instruction.velocity)) * FWD_VELOCITY_RATE_CONST;
             right += ((int) (instruction.velocity)) * FWD_VELOCITY_RATE_CONST; 
             LOG_INF("Left: %i, right: %i", left, right);
+
+            // avoid wraparound when casting. 
             if (left > 127) {
                 left = 127; 
             } else if (left < -128) {
@@ -84,6 +86,7 @@ void rovermotor_handler(void* handler, void*, void* )
             // Map int8 range to 0-255 for motor drive. 
             uint8_t left_motor_cmd = left + 127; 
             uint8_t right_motor_cmd = right + 127; 
+            
             // Control each motor. 
             motordriver_send_pwm(info.dev, info.left_addr, left_motor_cmd);
             motordriver_send_pwm(info.dev, info.right_addr, right_motor_cmd); 
@@ -106,7 +109,7 @@ int rovermotor_send_instruction(
         .direction = direction,
         .velocity = speed,
     };
-
+    // Send across to thread. Don't wait to avoid blocking caller task. 
     int status = k_msgq_put(&(motor_info->handler_queue), (void*) (&command), K_NO_WAIT);
     if (status == -ENOMSG) {
         LOG_ERR("Couldn't send to handler: ENOMSG: Returned without waiting or queue purged.");
