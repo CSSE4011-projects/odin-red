@@ -190,11 +190,6 @@ int main(void)
 
 		/* Check for control data from bt thread */
 		if (!k_msgq_get(&control_msgq, &control, K_NO_WAIT)) {
-			// LACHLAN do something with the rover driver
-			// THESE ARE THE VALUES :)
-			// control.pedal_left;
-			// control.pedal_right;
-			// control.rudder_angle;
 			LOG_INF("Received from pedals: %d, %d, %d\n", control.pedal_left, control.pedal_right, control.rudder_angle);
 
 			// Assumptions: 
@@ -206,10 +201,6 @@ int main(void)
 				control.rudder_angle, 
 				&motor_control_handle);
 		}
-
-		
-
-
 	}
 }
 
@@ -238,7 +229,6 @@ void send_ahu_rgb(uint8_t red, uint8_t green, uint8_t blue)
 	/* Send rgb control struct to rgb message queue */
 	if (k_msgq_put(&ahu_rgb_msgq, &colour, K_NO_WAIT) != 0) {
 		/* Queue is full, purge it */
-	
 		k_msgq_purge(&ahu_rgb_msgq);
 	}
 }

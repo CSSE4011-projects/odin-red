@@ -33,7 +33,6 @@ int roveruart_init(const struct device* dev, struct roveruart_info* info)
  */
 void roveruart_rx_cb(const struct device* dev, void* user_data) 
 {	
-	/
 	struct roveruart_info* info = ((struct roveruart_info*) user_data);
 	uint8_t rxd;
 	static int num_rxd = 0; 
@@ -61,7 +60,6 @@ void roveruart_rx_cb(const struct device* dev, void* user_data)
 			pos.y = rxd; 
 			num_rxd = 0;
 			k_msgq_put(&info->receive, &pos, K_NO_WAIT);
-			
 		}
 
 	}
