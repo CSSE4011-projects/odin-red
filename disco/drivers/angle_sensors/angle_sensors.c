@@ -1,10 +1,6 @@
 
 #include "angle_sensors.h"
 
-/* Macros for Kalman filter weights */
-#define GYRO_WEIGHT     1
-#define MAGN_WEIGHT     (1 - GYRO_WEIGHT)
-
 /* Calibration constants */
 #define MAGN_X_MAX      0.08
 #define MAGN_X_MIN      -0.33
@@ -15,6 +11,8 @@
 #define MAGN_X_OFFSET   (MAGN_X_SCALER - MAGN_X_MAX)
 #define MAGN_Y_SCALER   ((MAGN_Y_MAX - MAGN_Y_MIN) / 2)
 #define MAGN_Y_OFFSET   (MAGN_Y_SCALER - MAGN_Y_MAX)
+#define GYRO_WEIGHT     1
+#define MAGN_WEIGHT     (1 - GYRO_WEIGHT)
 
 #define DELAY_MS        200.0
 
@@ -68,19 +66,7 @@ void angle_sensors_thread(void *, void *, void *)
     /* Struct to store all sensor values to be sent in message queue */
     struct angle_data angle_info;
 
-    /* Set initial angle based on magnetometer readings */
-    sensor_sample_fetch_chan(lis3mdl_dev, SENSOR_CHAN_MAGN_XYZ);
-    sensor_channel_get(lis3mdl_dev, SENSOR_CHAN_MAGN_X, &magn_x_raw);
-    sensor_channel_get(lis3mdl_dev, SENSOR_CHAN_MAGN_Y, &magn_y_raw);
-
-    magn_x = (sensor_value_to_double(&magn_x_raw) + MAGN_X_OFFSET) / MAGN_X_SCALER;
-    magn_y = (sensor_value_to_double(&magn_y_raw) + MAGN_Y_OFFSET) / MAGN_Y_SCALER;
-
-    prev_angle = atan2(magn_y, magn_x) * 57.3;
-    if (prev_angle < 0) {
-        prev_angle += 360;
-    }
-
+    /* Set the initial angle to 0 degrees */
     prev_angle = 0;
 
     /* Initialise reference angle to 0 degrees */
@@ -135,8 +121,6 @@ void angle_sensors_thread(void *, void *, void *)
             k_msgq_purge(&angle_msgq);
         }
 
-        // TODO: change this to a timestamping approach to keep values sent
-        // at consistent rate
         k_msleep(DELAY_MS);
     }
 }
