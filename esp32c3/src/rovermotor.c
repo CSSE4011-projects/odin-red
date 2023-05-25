@@ -51,6 +51,7 @@ void rovermotor_handler(void* handler, void*, void* )
     // Initialize left and right motors. 
     LOG_INF("Initializing left motor");
     motordriver_init(info.dev, info.left_addr);
+    k_msleep(10);
     LOG_INF("Initializing right motor");
     motordriver_init(info.dev, info.right_addr); 
 
@@ -86,7 +87,7 @@ void rovermotor_handler(void* handler, void*, void* )
             // Map int8 range to 0-255 for motor drive. 
             uint8_t left_motor_cmd = left + 127; 
             uint8_t right_motor_cmd = right + 127; 
-            
+
             // Control each motor. 
             motordriver_send_pwm(info.dev, info.left_addr, left_motor_cmd);
             motordriver_send_pwm(info.dev, info.right_addr, right_motor_cmd); 

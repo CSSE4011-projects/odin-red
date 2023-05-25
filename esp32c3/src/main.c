@@ -166,6 +166,8 @@ int main(void)
 	/* Struct to receive control data from the bt thread */
 	struct control_data control;
 	int res = 0;
+	k_msleep(50);
+	roveruart_reset_angle(&uart_control_handle);
 	while (1)
 	{
 		k_sleep(K_MSEC(200));
